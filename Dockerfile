@@ -1,11 +1,7 @@
 ARG ARCH=
-FROM ${ARCH}debian:buster-slim
+FROM ${ARCH}python:3.8
 
 RUN apt-get update && apt-get -y upgrade && apt-get install -y \
-    software-properties-common \
-    curl \
-    git \
-    python3 \
     python3-pip
 
 
