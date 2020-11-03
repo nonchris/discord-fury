@@ -14,7 +14,7 @@
 name: Building docker containers
 on:
   push:
-    branches: main
+    branches: master
 jobs:
   building-arm64v8:
     runs-on: ubuntu-latest
