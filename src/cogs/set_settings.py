@@ -48,7 +48,7 @@ class Settings(commands.Cog):
 
 			#Settings won't be storred if max watched channels are reached
 			#-> searching for amaount of matching entries
-			if len(results := db.search_table(value=setting, column="setting")) >= config.SET_LIMIT:
+			if len(db.search_table(value=setting, column="setting")) >= config.SET_LIMIT:
 
 				text = f"Hey, you can't make me watch more than {config.SET_LIMIT} channels for this setting\n \
 						If you wanna change the channels I watch use `{config.PREFIX}ds [channel-id]` to remove a channel from your settings"				
@@ -166,7 +166,7 @@ class Settings(commands.Cog):
 
 			#Settings won't be storred if max watched channels are reached
 			#-> searching for amaount of matching entries
-			if len(results := db.search_table(value=setting, column="setting")) >= 1: #there can only be one archive and log
+			if len(db.search_table(value=setting, column="setting")) >= 1: #there can only be one archive and log
 
 				text = f"Hey, you can only have one archive and log at once\n \
 						If you wanna change those settings use `{config.PREFIX}ds [channel-id]` to remove a channel from your settings"				
