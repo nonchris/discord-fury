@@ -1,0 +1,29 @@
+# The bot token
+DISCORD_TOKEN_FURY='' #fill in your token (as string)
+
+#change these setting if you like, but they are god as they are
+PREFIX='f!'
+DB_NAME = r"data/fury1.db"
+VERSION = "V2.0.0"
+VERSION_SQL=1 
+
+OWNER = 314159265358979323	#id of the bot owner
+OWNER_NAME = "user#1234" #set your discord name 
+
+#limit for watch channel settings (voice-creator per type)
+SET_LIMIT = 3
+
+#emote id that should be added if you're pinged (as int)
+#see cogs/on_message.py
+EVERYONE_EMOTE = 314159265358979323
+					
+
+#switch that contains emote IDs for online status display
+#used in cogs/misc.py/members
+switch_online = {
+	"online": 314159265358979323,
+	"idle": 314159265358979323,
+	"dnd": 314159265358979323,
+	"offline": 314159265358979323,
+	"mobile": 314159265358979323, #gained trough that keyword no status
+}
