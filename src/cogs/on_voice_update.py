@@ -116,8 +116,8 @@ class VoiceChannelCreator(commands.Cog):
 		priv_ch = await ctx.guild.create_voice_channel("╠new-private-channel", category=cat, reason="Created voice setup")
 		db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
 		#checking if db has three entries for one of those settings
-		if len(results := db.search_table(value="pub-channel", column="setting")) < config.SET_LIMIT \
-		or len(results := db.search_table(value="priv-channel", column="setting")) < config.SET_LIMIT:
+		if len(db.search_table(value="pub-channel", column="setting")) < config.SET_LIMIT \
+		or len(db.search_table(value="priv-channel", column="setting")) < config.SET_LIMIT:
 			db.write_server_table(("pub-channel", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 			db.write_server_table(("priv-channel", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 
