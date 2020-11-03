@@ -5,7 +5,7 @@ if [ "$(ls -A $DIR)" ]; then
      echo "$DIR is not Empty. Userdata allready there."
 else
     echo "$DIR is Empty. Example data is being copied"
-    cp /app/config.py.example /app/data/
+    cp /app/config.py.example /app/data/config.py
     echo "Please fill up the example file mounted to your container. Container is being restarted in 30 seconds"
     sleep 30
 fi
