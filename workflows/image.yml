@@ -1,0 +1,90 @@
+# File written by GitHub user MayNiklas, never versions can be found in https://github.com/MayNiklas/github-actions
+#
+# GitHub action for building new docker images when there is a new commit on the master
+# Images are getting pushed to Dockerhub
+#
+# File location: .github/workflows/image.yml
+#
+# Used GitHub secrets:
+# DOCKER_USERNAME
+# DOCKER_PASSWORD
+# DOCKER_REPOSITORY
+
+
+name: Building docker containers
+on:
+  push:
+    branches: main
+jobs:
+  building-arm64v8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup-docker
+        uses: docker-practice/actions-setup-docker@master
+
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: build the image for arm64v8
+        run: |
+          docker build -t "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm64v8-latest --build-arg ARCH=arm64v8/ -f Dockerfile . &&\
+          docker push "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm64v8-latest
+
+  building-arm32v7:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup-docker
+        uses: docker-practice/actions-setup-docker@master
+
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: build the image for arm32v7
+        run: |
+          docker build -t "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm32v7-latest --build-arg ARCH=arm32v7/ -f Dockerfile . &&\
+          docker push "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm32v7-latest
+
+  building-amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup-docker
+        uses: docker-practice/actions-setup-docker@master
+
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          
+      - name: build the image for amd64
+        run: |
+          docker build -t "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":amd64-latest --build-arg ARCH=amd64/ -f Dockerfile . &&\
+          docker push "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":amd64-latest
+
+  manifest-create:
+    needs: [building-arm64v8, building-arm32v7, building-amd64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup-docker
+        uses: docker-practice/actions-setup-docker@master
+
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          
+      - name: create manifest
+        run: |
+          docker manifest create \
+          "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":latest \
+          --amend "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm64v8-latest \
+          --amend "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":arm32v7-latest \
+          --amend "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":amd64-latest
+           
+      - name: push manifest
+        run: |
+          docker manifest push "${{ secrets.DOCKER_USERNAME }}"/"${{ secrets.DOCKER_REPOSITORY }}":latest
