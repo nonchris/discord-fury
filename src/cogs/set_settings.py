@@ -121,6 +121,9 @@ class Settings(commands.Cog):
 				if len(value) == 18:
 					#all checks passed - removing that entry
 					db.remove_line(int(value), column="value_id")
+					channel = ctx.guild.get_channel(int(value))
+					await ctx.send(embed=utils.make_embed(color=discord.Color.green(), name="Deleted",
+												value=f"Removed `{channel}` from settings"))
 				else:
 					raise #enter except
 
