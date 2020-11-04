@@ -176,10 +176,10 @@ class VoiceChannelCreator(commands.Cog):
 					}
 				#creating channels
 				v_channel = await member.guild.create_voice_channel(
-								channel_name[0].format(member.name),
+								channel_name[0].format(member.nick),
 								category=after.channel.category, overwrites=v_overwrites)
 				t_channel = await member.guild.create_text_channel(
-								channel_name[1].format(member.name),
+								channel_name[1].format(member.nick),
 								category=after.channel.category,
 								overwrites={member: discord.PermissionOverwrite(view_channel=True),
 								member.guild.default_role: discord.PermissionOverwrite(view_channel=False)})
@@ -210,7 +210,8 @@ class VoiceChannelCreator(commands.Cog):
 				t_channel = member.guild.get_channel(cchannel[0].linked_channel)
 				#check if archive is given and if channel contains messages to archive
 				try: #trying to archive category - throws an error when category is full 
-					if (archive := checker.get_archive()) and t_channel.last_message != None:
+					if (checker.get_archive()) and t_channel.last_message != None:
+						archive = checker.get_archive()
 						await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
 					
 					else: #empty channel
