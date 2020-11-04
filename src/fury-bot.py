@@ -51,7 +51,7 @@ if __name__ == '__main__':
 async def on_ready():
     print(f'{bot.user.name} has connected')
     guild = discord.utils.get(bot.guilds)#, name=GUILD)
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="type !help to start"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"type {config.PREFIX}help to start"))
     print('Bot is connected to the following guilds')
     print()
     for g in bot.guilds:
