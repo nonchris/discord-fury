@@ -29,7 +29,10 @@ class Help(commands.Cog):
 	        if not cog:
 	            """Cog listing.  What more?"""
 	            #Title & Introduction
-	            owner=ctx.guild.get_member(config.OWNER)
+	            try:
+	            	owner=ctx.guild.get_member(config.OWNER).mention
+	            except:
+	            	owner = config.OWNER_NAME
 	            halp=discord.Embed(title='Commands and modules', color=discord.Color.blue(),
 	                               description='Use `%shelp <module>` to gain more information about that module :smiley:\n' %prefix)
 	            #iterating trough cogs, gaining descriptions
@@ -49,8 +52,9 @@ class Help(commands.Cog):
 	            if cmds_desc:
 	            	halp.add_field(name='Not belonging to a module',value=cmds_desc[0:len(cmds_desc)-1],inline=False)
 	            #setting information about author
-	            halp.add_field(name="About", value="This Bot is developed and maintained by %s \nPlease contact me for Ideas and Bugs\n" 
-	            									"You can find me on https://discord.gg/sn1054"%(owner.mention))
+	            halp.add_field(name="About", value="The Bots Code is developed by Christoph#2814, based on discord.py.\
+		    							This version of it is maintained by %s\n\
+		    							Please visit https://github.com/nonchris/discord-fury to submit Ideas and Bugs\n"%(owner))
 	            halp.set_footer(text="Bot is running %s" %config.VERSION)
 
 	            #output
