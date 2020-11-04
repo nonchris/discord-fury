@@ -174,12 +174,13 @@ class VoiceChannelCreator(commands.Cog):
 						member: discord.PermissionOverwrite(manage_permissions=True, manage_channels=True, connect=True), #give member connect and manage rights 
             			member.guild.default_role: discord.PermissionOverwrite(connect=False)
 					}
+
 				#creating channels
 				v_channel = await member.guild.create_voice_channel(
-								channel_name[0].format(member.nick),
+								channel_name[0].format(member.display_name),
 								category=after.channel.category, overwrites=v_overwrites)
 				t_channel = await member.guild.create_text_channel(
-								channel_name[1].format(member.nick),
+								channel_name[1].format(member.display_name),
 								category=after.channel.category,
 								overwrites={member: discord.PermissionOverwrite(view_channel=True),
 								member.guild.default_role: discord.PermissionOverwrite(view_channel=False)})
