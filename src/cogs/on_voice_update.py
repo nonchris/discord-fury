@@ -210,7 +210,8 @@ class VoiceChannelCreator(commands.Cog):
 				t_channel = member.guild.get_channel(cchannel[0].linked_channel)
 				#check if archive is given and if channel contains messages to archive
 				try: #trying to archive category - throws an error when category is full 
-					if (archive := checker.get_archive()) and t_channel.last_message != None:
+					if (checker.get_archive()) and t_channel.last_message != None:
+						archive = checker.get_archive()
 						await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
 					
 					else: #empty channel
