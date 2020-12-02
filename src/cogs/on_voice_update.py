@@ -185,9 +185,25 @@ class VoiceChannelCreator(commands.Cog):
 				v_overwrites = {} #None except it's a private channel
 				if ch_type == "priv": #giving member special perms when private channel
 					v_overwrites = {
-						member: discord.PermissionOverwrite(manage_permissions=True, manage_channels=True, connect=True), #give member connect and manage rights 
+						#give member connect and manage rights 
             			member.guild.default_role: discord.PermissionOverwrite(connect=False)
 					}
+
+				#checking if users should have rights to rename pub channel
+				#chanenls can't be synced anymore - need to set general role permissions
+				elif checker.get_edit_perms():
+					#checking for new custom-default role
+					def_role = checker.default_role()
+					if def_role is not None:
+						def_role = member.guild.get_role(def_role)
+					#taking standard default role
+					else:
+						def_role = member.guild.default_role
+					#give he default role default perms
+					#and creator rename rights
+					v_overwrites = after.channel.category.overwrites
+					v_overwrites[member] = discord.PermissionOverwrite(manage_channels=True,
+					 										connect=True)
 
 				#creating channels
 				v_channel = await member.guild.create_voice_channel(
