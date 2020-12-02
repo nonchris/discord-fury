@@ -59,6 +59,20 @@ class EventCheck:
 		except IndexError:
 			return None
 
+	def get_edit_perms(self): #return 0 (False) by default
+		result = self.db.search_table(value="edit_channel", column="setting")
+		try:
+			return result[0].value_id
+		except IndexError:
+			return 0
+
+	def default_role(self): #returns None when no set
+		result = self.db.search_table(value="default_role", column="setting")
+		try:
+			return result[0].value_id
+		except IndexError:
+			return None
+
 	def del_entry(self, channel):
 		db = sqltils.DbConn(db_file, self.member.guild.id, "created_channels")
 		db.remove_line(channel, column="channel_id")
