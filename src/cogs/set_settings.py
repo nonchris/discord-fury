@@ -142,33 +142,94 @@ class Settings(commands.Cog):
 			await ctx.send(embed=emby)
 
 
-	
+	#command to set-edit-vc permissions
+	@commands.command(name='edit-channel', aliases=['ec'], 
+			help=f'Change wether created public VC names can be edited by the channel creator.\n\
+				Arguments: [`yes` | `no`]\n\
+				Default is `no`.')
+	@commands.has_permissions(administrator=True) 
+	async def edit_channel(self, ctx, value: str):
+		settings = {'yes': 1,
+					'no': 0}
 
-	@commands.command(name="set-archive", aliases=["sa"], help=f"Set an archive category for created text-channels and log channel.\n\
+		value_num = settings.get(value.lower())
+		if value_num != None:
+			db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
+			
+			#if setting is already there old value needs to be deleted
+			if len(db.search_table(value="edit_channel", column="setting")) == 1: #there can only be one archive and log
+				db.remove_line('"edit_channel"', column="setting")	
+			
+			entry = ("edit_channel", "value_name", value_num,\
+					time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL)				
+			db.write_server_table(entry)
+			
+			emby = utils.make_embed(color=discord.Color.green(),
+				name="Success",
+				value=f"Channel Creator can edit channel-name: {value}")
+			await ctx.send(embed=emby)
+
+		else:
+			emby = utils.make_embed(color=discord.Color.orange(),
+				name="Missing argument",
+				value=f"Please enter `yes` or `no` as argument.")
+			await ctx.send(embed=emby)
+
+
+
+
+	@commands.command(name="set", aliases=["sa"], help=f"Change various settings.\n\
+		`Options`:\n\
+		archive - needs category ID\n\
+		`log` - needs category ID\n\
+		`default-role` - needs role ID\n\
 		Usage: \
-		`{config.PREFIX}sa [archive | log] [category-id | channel-id]`.\n \
-		Please not that text-channels will only be archived when they contain at least one message, they'll be deleted otherwise. \n \
+		`{config.PREFIX}sa [`Option`] [needed argument]`.\n \
+		Please note that text-channels will only be archived when they contain at least one message, they'll be deleted otherwise. \n \
+		Also the `default-role` option comes with some disadvantages, e.g. new VCs aren't synced with their category\n\
 		This option is - also - admin only")
 	@commands.has_permissions(administrator=True) 
 	async def set_archive(self, ctx, setting: str, value: str):
 		#possible settings switch -returns same value but nothing if key isn't valid
 		settings = {
 			"archive": utils.get_chan(ctx.guild, value),
-			"log": utils.get_chan(ctx.guild, value)
+			"log": utils.get_chan(ctx.guild, value),
+			"default-role": utils.get_rid(ctx, [value])
 		}
 		#trying to get a corresponding channel / id
 		value = settings.get(setting)
 		#if value is "None" this means that there is no such setting or no such value for it
 		#checking if keyword mateches the entered channel type
 		# -> ensures that the process of getting a correct setting has worked
-		if value is not None and value.type == discord.ChannelType.text and setting == "log" \
+		
+		if setting == "default-role" and value is not None:
+			role = ctx.guild.get_role(value[0][0])
+			db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
+			
+			#if setting is already there old value needs to be deleted
+			if len(db.search_table(value="default_role", column="setting")) == 1: #there can only be one archive and log
+				db.remove_line('"default_role"', column="setting")	
+			
+			#editing db
+			entry = ("default_role", "value_name", role.id,\
+					time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL)				
+			db.write_server_table(entry)
+			
+			#sending reply
+			emby = utils.make_embed(color=discord.Color.green(),
+				name="Success",
+				value=f"Your new defaul role is: {role.mention}")
+			await ctx.send(embed=emby)
+
+		#set channels
+		elif value is not None and value.type == discord.ChannelType.text and setting == "log" \
 									or value.type == discord.ChannelType.category and setting == "archive":
 
 			#conneting to db - creating a new one if there is none yet
 			db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
 
 			#Settings won't be storred if max watched channels are reached
-			#-> searching for amaount of matching entries
+			#-> searching for amount of matching entries
 			if len(db.search_table(value=setting, column="setting")) >= 1: #there can only be one archive and log
 
 				text = f"Hey, you can only have one archive and log at once\n \
@@ -187,7 +248,7 @@ class Settings(commands.Cog):
 		#when false inputs were given
 		else:
 			value = ("Please ensure that you've entered a valid setting \
-					and channel-id for that setting.")
+					and channel-id or role-id for that setting.")
 			emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=value)
 			await ctx.send(embed=emby)
 
