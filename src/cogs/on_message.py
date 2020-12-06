@@ -36,7 +36,7 @@ class MessageListener(commands.Cog):
 			except:
 				None
 
-		elif "hydrated" in message.content or "hydro" in message.content: #a secret for my friends :)
+		elif "hydrated" in message.content or "hydro" in message.content or "h20" in message.content or "das kühle Nass" in message.content: #a secret for my friends :)
 			#emote = self.bot.get_emoji("droplet")
 			await message.add_reaction('\N{cup with straw}')
 
