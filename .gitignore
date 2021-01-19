@@ -3,6 +3,7 @@ config.py
 *.csv
 data/*
 *.db
+.idea/
 
 # ---> Python
 # Byte-compiled / optimized / DLL files
