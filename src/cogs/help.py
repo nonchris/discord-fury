@@ -23,7 +23,7 @@ class Help(commands.Cog):
     @commands.command()
     # @commands.has_permissions(add_reactions=True,embed_links=True)
     async def help(self, ctx, *cog):
-        """Zeigt alle Module des Bots an"""
+        """Shows all modules of that bot"""
         prefix = config.PREFIX
         try:
             # checks if cog parameter was given
@@ -35,16 +35,16 @@ class Help(commands.Cog):
                     owner = ctx.guild.get_member(config.OWNER).mention
                 except:
                     owner = config.OWNER_NAME
-                halp = discord.Embed(title='Commands and modules', color=discord.Color.blue(),
-                                     description='Use `%shelp <module>` to gain more information about that module :smiley:\n' % prefix)
+                emb = discord.Embed(title='Commands and modules', color=discord.Color.blue(),
+                                     description=f'Use `{prefix}help <module>` to gain more information about that module :smiley:\n')
                 # iterating trough cogs, gaining descriptions
                 cogs_desc = ''
                 for x in self.bot.cogs:
                     cogs_desc += ('`{}` {}'.format(x, self.bot.cogs[x].__doc__) + '\n')
                 # printing cogs
-                halp.add_field(name='Modules', value=cogs_desc[0:len(cogs_desc) - 1], inline=False)
+                emb.add_field(name='Modules', value=cogs_desc[0:len(cogs_desc) - 1], inline=False)
 
-                # interating trough uncatheogorized commands
+                # integrating trough uncategorized commands
                 cmds_desc = ''
                 for y in self.bot.walk_commands():
                     # if cog not in a cog
@@ -52,28 +52,27 @@ class Help(commands.Cog):
                         cmds_desc += ('{} - {}'.format(y.name, y.help) + '\n')
                 # adding those commands to embed
                 if cmds_desc:
-                    halp.add_field(name='Not belonging to a module', value=cmds_desc[0:len(cmds_desc) - 1],
+                    emb.add_field(name='Not belonging to a module', value=cmds_desc[0:len(cmds_desc) - 1],
                                    inline=False)
                 # setting information about author
-                halp.add_field(name="About", value="The Bots Code is developed by Christoph#2814, based on discord.py.\
-		    							This version of it is maintained by %s\n\
-		    							Please visit https://github.com/nonchris/discord-fury to submit Ideas and Bugs\n" % (
-                    owner))
-                halp.set_footer(text="Bot is running %s" % config.VERSION)
+                emb.add_field(name="About", value=f"The Bots Code is developed by Christoph#2814, based on discord.py.\
+		    							This version of it is maintained by {owner}\n\
+		    							Please visit https://github.com/nonchris/discord-fury to submit Ideas and Bugs\n")
+                emb.set_footer(text="Bot is running %s" % config.VERSION)
 
                 # output
                 # await ctx.message.add_reaction(emoji='✉') #adding reaction to !help
                 # await ctx.message.author.send('',embed=halp) #sending via PN
-                await ctx.send('', embed=halp)
+                await ctx.send('', embed=emb)
 
             else:
                 # too many cogs requested
                 """Helps me remind you if you pass too many args."""
                 if len(cog) > 1:
-                    halp = discord.Embed(title='Error!',
+                    emb = discord.Embed(title='Error!',
                                          description="That's to much modules at once :sweat_smile:\n Please only ask for one module at the time",
                                          color=discord.Color.red())
-                    await ctx.message.author.send('', embed=halp)
+                    await ctx.message.author.send('', embed=emb)
 
                 else:
                     splice = cog[0]
@@ -86,22 +85,22 @@ class Help(commands.Cog):
                         # for y in cog:
                         if x == cog:
                             # making title
-                            halp = discord.Embed(title=cog + ' - Commands', description=self.bot.cogs[cog].__doc__,
+                            emb = discord.Embed(title=cog + ' - Commands', description=self.bot.cogs[cog].__doc__,
                                                  color=discord.Color.green())
                             for c in self.bot.get_cog(cog).get_commands():
                                 if not c.hidden:  # if cog not hidden
-                                    halp.add_field(name="%s%s" % (config.PREFIX, c.name), value=c.help, inline=False)
+                                    emb.add_field(name="%s%s" % (config.PREFIX, c.name), value=c.help, inline=False)
                             found = True
                     # if cog not found
                     if not found:
                         """Reminds you if that cog doesn't exist."""
-                        halp = discord.Embed(title='Error!', description="The module %s doesn't exist :scream:" % cog,
+                        emb = discord.Embed(title='Error!', description=f"The module {cog} doesn't exist :scream:",
                                              color=discord.Color.red())
                     # sending message with information
                     # else:
                     #     await ctx.message.add_reaction(emoji='✉')
-                    # await ctx.message.author.send('',embed=halp)
-                    await ctx.send('', embed=halp)
+                    # await ctx.message.author.send('',embed=emb)
+                    await ctx.send('', embed=emb)
         except Exception as e:
             print(e)
             await ctx.send("Sorry, I can't send any embeds.")
