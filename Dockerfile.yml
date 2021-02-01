@@ -1,5 +1,11 @@
 ---
 
+- name: tasks
+  hosts: localhost
+  vars:
+    - apt_packages:
+      - python3
+      - python3-pip
   tasks:
   - name: Upgrade all packages to the latest version
     apt:
@@ -14,4 +20,11 @@
   - name: Remove dependencies that are no longer required
     apt:
       autoremove: yes
+
+  - name: "Install packages defined in apt_packages"
+    apt:
+      name: "{{ item }}"
+      state: latest
+    loop: "{{ apt_packages }}"
+    when: apt_packages|default([])|count > 0
 
