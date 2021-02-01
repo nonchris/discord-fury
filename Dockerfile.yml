@@ -41,3 +41,27 @@
     loop: "{{ query('dict', pip3_packages) }}"
     when: pip3_packages|default([])|count > 0
 
+  - name: 'collect files'
+    find:
+      paths: "/var/lib/apt/lists/"
+      hidden: true
+      recurse: true
+    register: collected_files
+
+  - name: 'collect directories'
+    find:
+      paths: "/var/lib/apt/lists/"
+      hidden: true
+      recurse: true
+      file_type: directory
+    register: collected_directories
+
+  - name: remove collected files and directories
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: >
+      {{
+        collected_files.files
+        + collected_directories.files
+      }}
