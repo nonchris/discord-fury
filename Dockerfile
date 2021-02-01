@@ -1,5 +1,5 @@
 ARG ARCH=
-FROM ${ARCH}python:3.8
+FROM ${ARCH}ubuntu:20.04
 
 RUN apt-get update && apt-get -y upgrade && apt-get install -y \
     python3-pip
