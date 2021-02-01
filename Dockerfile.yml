@@ -6,6 +6,11 @@
     - apt_packages:
       - python3
       - python3-pip
+    - pip3_packages:
+        discord:
+          name: discord.py
+          version: 1.5.1
+
   tasks:
   - name: Upgrade all packages to the latest version
     apt:
@@ -27,4 +32,12 @@
       state: latest
     loop: "{{ apt_packages }}"
     when: apt_packages|default([])|count > 0
+
+  - name: "Install python pip requirements defined in pip3_packages"
+    pip:
+      executable: pip3
+      name: "{{ item.value.name }}"
+      version: "{{ item.value.version }}"
+    loop: "{{ query('dict', pip3_packages) }}"
+    when: pip3_packages|default([])|count > 0
 
