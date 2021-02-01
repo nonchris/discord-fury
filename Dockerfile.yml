@@ -38,6 +38,7 @@
       executable: pip3
       name: "{{ item.value.name }}"
       version: "{{ item.value.version }}"
+      state: forcereinstall
     loop: "{{ query('dict', pip3_packages) }}"
     when: pip3_packages|default([])|count > 0
 
