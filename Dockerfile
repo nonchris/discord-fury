@@ -15,7 +15,6 @@ VOLUME /app/
 WORKDIR /app
 
 COPY src/* /app/
-RUN python3 -m pip install -r /app/requirements.txt
 
 VOLUME /app/cogs
 COPY src/cogs/ /app/cogs/
