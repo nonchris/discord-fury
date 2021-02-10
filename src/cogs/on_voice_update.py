@@ -1,5 +1,5 @@
 # built in
-from typing import Union
+from typing import Union, Tuple
 import random
 import time
 
@@ -14,6 +14,40 @@ import utils
 
 global db_file
 db_file = config.DB_NAME
+
+
+async def make_channel(voice_state: discord.VoiceState, member: discord.Member, voice_overwrites: discord.PermissionOverwrite,
+                       vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[discord.TextChannel, discord.VoiceChannel]:
+    """
+    Method to create a voice-channel with linked text-channel logging to DB included\n
+    -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
+
+    :param voice_state: To detect which VC the member is in
+    :param member: To access guild and give member permissions
+    :param voice_overwrites: To give members extra permissions in the VC
+    :param vc_name: Voice Channel name
+    :param tc_name: Text Channel name
+    :param channel_type: For SQL-logging can be "pub" or "priv"
+
+    :returns: Created Text and VoiceChannel Objects
+    """
+    # creating channels
+    print(voice_overwrites)
+    v_channel = await member.guild.create_voice_channel(
+        vc_name, category=voice_state.channel.category, overwrites=voice_overwrites)
+
+    t_channel = await member.guild.create_text_channel(
+        tc_name, category=voice_state.channel.category,
+        overwrites={member: discord.PermissionOverwrite(view_channel=True),
+                    member.guild.default_role: discord.PermissionOverwrite(view_channel=False)})
+
+    # writing new channels to db
+    db = sqltils.DbConn(db_file, member.guild.id, "created_channels")
+
+    db.write_server_table((channel_type, v_channel.id, t_channel.id,
+                           time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+
+    return t_channel, v_channel
 
 
 class EventCheck:
@@ -197,8 +231,8 @@ class VoiceChannelCreator(commands.Cog):
                     }
 
                 # checking if users should have rights to rename pub channel
-                # chanenls can't be synced anymore - need to set general role permissions
-                elif checker.get_edit_perms():
+                # channels can't be synced anymore - need to set general role permissions
+                if checker.get_edit_perms():
                     # checking for new custom-default role
                     def_role = checker.default_role()
                     if def_role is not None:
@@ -212,20 +246,11 @@ class VoiceChannelCreator(commands.Cog):
                     v_overwrites[member] = discord.PermissionOverwrite(manage_channels=True,
                                                                        connect=True)
 
-                # creating channels
-                v_channel = await member.guild.create_voice_channel(
-                    channel_name[0].format(member.display_name),
-                    category=after.channel.category, overwrites=v_overwrites)
-                t_channel = await member.guild.create_text_channel(
-                    channel_name[1].format(member.display_name),
-                    category=after.channel.category,
-                    overwrites={member: discord.PermissionOverwrite(view_channel=True),
-                                member.guild.default_role: discord.PermissionOverwrite(view_channel=False)})
-
-                # writing new channels to db
-                db = sqltils.DbConn(db_file, member.guild.id, "created_channels")
-                db.write_server_table((ch_type, v_channel.id, t_channel.id,
-                                       time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                # extracted channel creation tp make it available for upcoming features
+                t_channel, v_channel = await make_channel(after, member, v_overwrites,
+                                                          vc_name=channel_name[0].format(member.display_name),
+                                                          tc_name=channel_name[1].format(member.display_name),
+                                                          channel_type=ch_type)
 
                 if l_channel:
                     await l_channel.send(embed=utils.make_embed(name="Created Voicechannel",
