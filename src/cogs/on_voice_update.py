@@ -23,8 +23,8 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
 
     :param voice_state: To detect which VC the member is in
-    :param member: To access guild and give member permissions
-    :param voice_overwrites: To give members extra permissions in the VC
+    :param member: To access guild and give member TC access permissions
+    :param voice_overwrites: To give member extra permissions in the VC and TC
     :param vc_name: Voice Channel name
     :param tc_name: Text Channel name
     :param channel_type: For SQL-logging can be "pub" or "priv"
@@ -32,7 +32,6 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     :returns: Created Text and VoiceChannel Objects
     """
     # creating channels
-    print(voice_overwrites)
     v_channel = await member.guild.create_voice_channel(
         vc_name, category=voice_state.channel.category, overwrites=voice_overwrites)
 
@@ -47,7 +46,7 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     db.write_server_table((channel_type, v_channel.id, t_channel.id,
                            time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 
-    return t_channel, v_channel
+    return v_channel, t_channel
 
 
 class EventCheck:
@@ -80,7 +79,7 @@ class EventCheck:
         db = sqltils.DbConn(db_file, self.member.guild.id, "created_channels")
         return db.search_table(value=channel, column="channel_id")
 
-    def get_archive(self):  # resturns channel object
+    def get_archive(self):  # returns channel object
         result = self.db.search_table(value="archive", column="setting")
         try:
             return self.member.guild.get_channel(result[0].value_id)
@@ -247,7 +246,7 @@ class VoiceChannelCreator(commands.Cog):
                                                                        connect=True)
 
                 # extracted channel creation tp make it available for upcoming features
-                t_channel, v_channel = await make_channel(after, member, v_overwrites,
+                v_channel, t_channel = await make_channel(after, member, v_overwrites,
                                                           vc_name=channel_name[0].format(member.display_name),
                                                           tc_name=channel_name[1].format(member.display_name),
                                                           channel_type=ch_type)
