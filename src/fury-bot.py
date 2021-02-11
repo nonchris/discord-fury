@@ -36,7 +36,8 @@ initial_extensions = [
         'cogs.misc',
         'cogs.on_message',
         'cogs.set_settings',
-        'cogs.on_voice_update'
+        'cogs.on_voice_update',
+        'cogs.mod_commands'
             ]    
 
 # Here we load our extensions(cogs) listed above in [initial_extensions].
