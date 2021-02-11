@@ -37,7 +37,7 @@ initial_extensions = [
         'cogs.on_message',
         'cogs.set_settings',
         'cogs.on_voice_update',
-        'cogs.mod_commands'
+        'cogs.breakout_rooms'
             ]    
 
 # Here we load our extensions(cogs) listed above in [initial_extensions].

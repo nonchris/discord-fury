@@ -11,9 +11,9 @@ import cogs.help as hp
 from cogs.on_voice_update import make_channel
 
 
-class Moderator(commands.Cog):
+class Breakout(commands.Cog):
     """
-    This are commands that not any member can access but everyone with kick permissions (for now)
+    Commands for creating and managing breakout rooms (kick permissions required for execution)
     """
 
     def __init__(self, bot):
@@ -49,13 +49,14 @@ class Moderator(commands.Cog):
             # number too small
             else:
                 await hp.send_embed(ctx, embed=utils.make_embed("Number must be greater than 0", discord.Color.orange(),
-                                                                value="Try again :wink:"))
+                                                                value=f"Try again :wink:\nExample: `{config.PREFIX}brout 4`"))
                 return
 
         # type conversion failed
-        except ValueError:
+        except (IndexError, ValueError):
             await hp.send_embed(ctx, embed=utils.make_embed("Wrong argument", discord.Color.orange(),
-                                                            value="Please enter the amount of members per channel"))
+                                                            value=f"Please enter the amount of members per channel\n"
+                                                                  f"Example: `{config.PREFIX}brout 4`"))
             return
 
         # channel invoker is based in
@@ -116,4 +117,4 @@ class Moderator(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Moderator(bot))
+    bot.add_cog(Breakout(bot))
