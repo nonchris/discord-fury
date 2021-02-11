@@ -5,56 +5,82 @@ import discord
 from discord.ext import commands
 
 import utils
+import data.config as config
+import sql_utils as sqltils
+import cogs.help as hp
 from cogs.on_voice_update import make_channel
 
 
 class Moderator(commands.Cog):
     """
-    Here are commands that not any member can access but everyone with kick permissions (for now)
+    This are commands that not any member can access but everyone with kick permissions (for now)
     """
 
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="break-out", aliases=["bro"])
+    @commands.command(name="break-out", aliases=["bor", "brout"],
+                      help=f"""
+                            Usage: `{config.PREFIX}break-out [members per channel]`\n
+                            Creates breakout channels with given amount of members\n
+                            Members must be in same channel as you are
+                            The distribution is randomized\n
+                            Channel settings are the same as in your current channel\n
+                            Linked text channels will be created too\n
+                            Rooms created with this command behave like other channels created by the bot
+                            Empty VCs are deleted. Linked TCs will be deleted or archived as set in the settings\n
+                            Alias: `{config.PREFIX}bor [num]` | `{config.PREFIX}brout [num]`
+                            """)
     @commands.has_permissions(kick_members=True)
     async def break_out_rooms(self, ctx: discord.ext.commands.Context, *split: str):
 
+        # check if invoker is in a channel
         if not ctx.author.voice:
-            await ctx.send(embed=utils.make_embed("You're not in a VoiceChannel", discord.Color.orange(),
-                                                  value="Please enter a Voice Channel and try again"))
+            await hp.send_embed(ctx, embed=utils.make_embed("You're not in a VoiceChannel", discord.Color.orange(),
+                                                            value="Please enter a Voice Channel and try again"))
             return
 
-        # ensuring members var is given
+        # ensuring members var is given and is int
         try:
+            # check can fail when typecast fails or number too small
             if int(split[0]) > 0:
-                split = int(split[0])
+                split = int(split[0])  # saving integer in variable
 
+            # number too small
             else:
-                await ctx.send(embed=utils.make_embed("Number must be greater than 0", discord.Color.orange(),
-                                                      value="Try again :wink:"))
+                await hp.send_embed(ctx, embed=utils.make_embed("Number must be greater than 0", discord.Color.orange(),
+                                                                value="Try again :wink:"))
                 return
 
+        # type conversion failed
         except ValueError:
-            await ctx.send(embed=utils.make_embed("Wrong argument", discord.Color.orange(),
-                                                  value="Please enter the amount of members per channel"))
+            await hp.send_embed(ctx, embed=utils.make_embed("Wrong argument", discord.Color.orange(),
+                                                            value="Please enter the amount of members per channel"))
             return
 
+        # channel invoker is based in
         base_vc: discord.VoiceChannel = ctx.author.voice.channel
 
-        # channels_to_create = len(vc.members) // split
-        # TODO: Remove invoker from list
-        mv_channel = None
+        # making a copy of members in channel - used to move members
         members: List[discord.Member] = base_vc.members.copy()
-        random.shuffle(members)
-        overwrites = base_vc.category.overwrites
+        members.remove(ctx.author)  # invoker should not be moved to break-out-room
+        random.shuffle(members)  # shuffling list
 
-        for i in range(len(base_vc.members)):
+        overwrites = base_vc.category.overwrites  # settings for new channels
+        mv_channel = None  # temp var for holding current created channel
+        for i in range(len(members)):
+            """
+            Iterating trough members of VC
+            Creating new channel when last one filled
+            Moving members
+            """
             if i % split == 0:
                 mv_channel, _ = await make_channel(ctx.author.voice, members[i], overwrites,
                                                    vc_name=f"Breakout Room {i // split + 1}",
-                                                   tc_name=f"Breakout Room {i // split + 1}")
-
+                                                   tc_name=f"Breakout Room {i // split + 1}",
+                                                   channel_type="brout")
+            if members[i].voice is None:
+                continue
             await members[i].move_to(mv_channel, reason="Moved to breakout room")
 
     @commands.command(name="close-rooms", aliases=["cbr", "clbr"],
