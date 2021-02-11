@@ -57,6 +57,37 @@ class Moderator(commands.Cog):
 
             await members[i].move_to(mv_channel, reason="Moved to breakout room")
 
+    @commands.command(name="close-rooms", aliases=["cbr", "clbr"],
+                      help=f"""
+                            Closing all break-out rooms on server\n
+                            Members in those channels will be moved to your channel\n
+                            Break out rooms will be deleted
+                            Text channels will be deleted or archived -> settings.\n
+                            Alias: `{config.PREFIX}cbr` | `{config.PREFIX}clbr`
+                            """)
+    @commands.has_permissions(kick_members=True)
+    async def close_rooms(self, ctx: commands.Context):
+        # check if member is not in voice
+        if not ctx.author.voice:
+            await hp.send_embed(ctx, embed=utils.make_embed("You're not in a VoiceChannel", discord.Color.orange(),
+                                                            value="Please enter a Voice Channel and try again"))
+            return
+
+        # getting break-out rooms from database
+        db = sqltils.DbConn(config.DB_NAME, ctx.guild.id, "created_channels")
+        breakout_rooms: List[sqltils.SQL_to_Obj] = db.search_table(value='"brout"', column="type")
+
+        # iterating trough break out rooms, moving members back in main channel
+        # deletion of channels will be handled in separate on_voice_channel_update event when channel is empty
+        for room in breakout_rooms:
+            ch: discord.VoiceChannel = ctx.guild.get_channel(room.channel)
+            if ch is None:  # channel already deleted
+                continue
+            for m in ch.members:
+                if m.voice is None:  # member left voice chat
+                    continue
+                await m.move_to(ctx.author.voice.channel)
+
 
 def setup(bot):
     bot.add_cog(Moderator(bot))
