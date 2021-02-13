@@ -106,6 +106,7 @@ class Breakout(commands.Cog):
 
         # iterating trough break out rooms, moving members back in main channel
         # deletion of channels will be handled in separate on_voice_channel_update event when channel is empty
+        back_channel = ctx.author.voice.channel
         for room in breakout_rooms:
             ch: discord.VoiceChannel = ctx.guild.get_channel(room.channel)
             if ch is None:  # channel already deleted
@@ -113,7 +114,7 @@ class Breakout(commands.Cog):
             for m in ch.members:
                 if m.voice is None:  # member left voice chat
                     continue
-                await m.move_to(ctx.author.voice.channel)
+                await m.move_to(back_channel)
 
 
 def setup(bot):
