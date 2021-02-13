@@ -19,7 +19,7 @@ class Breakout(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="break-out", aliases=["bor", "brout"],
+    @commands.command(name="openroom", aliases=["bor", "brout", "break-out", "opro"],
                       help=f"""
                             Usage: `{config.PREFIX}break-out [members per channel]`\n
                             Creates breakout channels with given amount of members\n
@@ -29,7 +29,7 @@ class Breakout(commands.Cog):
                             Linked text channels will be created too\n
                             Rooms created with this command behave like other channels created by the bot
                             Empty VCs are deleted. Linked TCs will be deleted or archived as set in the settings\n
-                            Alias: `{config.PREFIX}bor [num]` | `{config.PREFIX}brout [num]`
+                            Alias: `{config.PREFIX}opro [num]`
                             """)
     @commands.has_permissions(kick_members=True)
     async def break_out_rooms(self, ctx: discord.ext.commands.Context, *split: str):
@@ -49,14 +49,14 @@ class Breakout(commands.Cog):
             # number too small
             else:
                 await hp.send_embed(ctx, embed=utils.make_embed("Number must be greater than 0", discord.Color.orange(),
-                                                                value=f"Try again :wink:\nExample: `{config.PREFIX}brout 4`"))
+                                                                value=f"Try again :wink:\nExample: `{config.PREFIX}opro 4`"))
                 return
 
         # type conversion failed
         except (IndexError, ValueError):
             await hp.send_embed(ctx, embed=utils.make_embed("Wrong argument", discord.Color.orange(),
                                                             value=f"Please enter the amount of members per channel\n"
-                                                                  f"Example: `{config.PREFIX}brout 4`"))
+                                                                  f"Example: `{config.PREFIX}opro 4`"))
             return
 
         # channel invoker is based in
@@ -84,13 +84,13 @@ class Breakout(commands.Cog):
                 continue
             await members[i].move_to(mv_channel, reason="Moved to breakout room")
 
-    @commands.command(name="close-rooms", aliases=["cbr", "clbr"],
+    @commands.command(name="closeroom", aliases=["cbr", "clbr", "close-rooms", "cl", "cloro"],
                       help=f"""
                             Closing all break-out rooms on server\n
                             Members in those channels will be moved to your channel\n
                             Break out rooms will be deleted
                             Text channels will be deleted or archived -> settings.\n
-                            Alias: `{config.PREFIX}cbr` | `{config.PREFIX}clbr`
+                            Alias: `{config.PREFIX}cloro`
                             """)
     @commands.has_permissions(kick_members=True)
     async def close_rooms(self, ctx: commands.Context):

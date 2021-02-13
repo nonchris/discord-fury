@@ -156,7 +156,7 @@ class VoiceChannelCreator(commands.Cog):
                 }
             else:
                 await ctx.send(embed=utils.make_embed(value="Hey, the given id is invalid,\
-								I'm trying to create the channels but with the default settings.", \
+								I'm trying to create the channels but with the default settings.",
                                                       name="No valid role", color=discord.Color.orange()))
         # creating channels
         cat = await ctx.guild.create_category_channel("Voice Channels", overwrites=ov, reason="Created voice setup")
@@ -174,7 +174,7 @@ class VoiceChannelCreator(commands.Cog):
             db.write_server_table(
                 ("priv-channel", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 
-            await ctx.send(embed=utils.make_embed(name="Sucessfully setup voice category", \
+            await ctx.send(embed=utils.make_embed(name="Sucessfully setup voice category",
                                                   value="You're category is set, have fun!\n \
 						Oh, yeah - you can change the channel names how ever you like :)", color=discord.Color.green()))
 
