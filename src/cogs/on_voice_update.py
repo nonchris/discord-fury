@@ -235,16 +235,6 @@ class VoiceChannelCreator(commands.Cog):
 
                 # checking if users should have rights to rename pub channel
                 # channels can't be synced anymore - need to set general role permissions
-                if checker.get_edit_perms():
-                    # checking for new custom-default role
-                    def_role = checker.default_role()
-                    if def_role is not None:
-                        def_role = member.guild.get_role(def_role)
-                    # taking standard default role
-                    else:
-                        def_role = member.guild.default_role
-                    # give he default role default perms
-                    # and creator rename rights
                 if checker.get_edit_perms() and ch_type == "pub":
                     # set default overwrites
                     # and give creator channel-rename rights
