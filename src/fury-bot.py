@@ -1,11 +1,20 @@
+import sys
+import logging
+import traceback
+
 # pip
 import discord
 from discord.ext import commands
-from discord.ext.commands import Bot
 
 # own files
 import utils
 import data.config as config
+
+logging.basicConfig(
+    filename="data/events.log",
+    level=logging.INFO,
+    style="{",
+    format="[{asctime}] [{levelname}] [{name}] {message}")
 
 intents = discord.Intents.all()
 # intents.presences = True
@@ -54,19 +63,58 @@ async def on_ready():
 
 
 # error message if user has not right permissions
-# @bot.event
-# async def on_command_error(ctx, error):
-#     if isinstance(error, commands.errors.CheckFailure):
-#         await ctx.send('You can\'t do that. Pleases ask an Admin')
+@bot.event
+async def on_command_error(ctx, error):
+    """
+    Overwriting command error handler from discord.py
+    """
+    print(error)
+    if isinstance(error, commands.errors.CheckFailure):
+        await ctx.send('You can\'t do that. Pleases ask an Admin')
+
+    elif isinstance(error, commands.errors.CommandNotFound):
+        await utils.send_embed(ctx,
+                               utils.make_embed(name="I'm sorry, I don't know this command", value=f'`{error}`',
+                                                color=discord.Color.orange()))
+
+    logging.warning(f"Command tried: {error}")
 
 
-## PANTHEON
-# loaded via cogs
+@bot.event
+async def on_error(function, *args, **kwargs):
+    """
+    Overwriting error handler from discord.py
+    """
+    # exception type
+    exception = sys.exc_info()[1]
+    # traceback text
+    tb_text = f'Error in: {function}\n{exception}\nTraceback (most recent call last):\n' \
+              + "".join(traceback.format_tb(sys.exc_info()[2])) + f"{exception}"
 
-# Discontinued projects
-# AIR 
-# Helix
-# Orion
+    print("----------\n")
+    print(tb_text)
+    logging.error(tb_text)
+
+    # sending message to member when channel creation process fails
+    if function == "on_voice_state_update" and isinstance(exception, discord.errors.Forbidden):
+        member = args[0]  # member is first arg that is passed in
+        # check if it's the error we expect
+        if tb_text.find("create_voice_channel") != -1:
+            await member.send(
+                embed=utils.make_embed(name=f"Something's wrong with my permissions",
+                                       value="I can't prepare (create & edit) a channel for you "
+                                             "or I can't move you.\n"
+                                             "Please check whether a channel was created and inform the server team "
+                                             "about that problem.\n I'm sorry! :confused:",
+                                       color=discord.Color.red()))
 
 
 bot.run(TOKEN)
+
+# PANTHEON
+# loaded via cogs
+
+# Discontinued projects
+# AIR
+# Helix
+# Orion
