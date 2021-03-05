@@ -1,25 +1,29 @@
 # built in
 import re
-from typing import Tuple
+from typing import Tuple, Union, List
 # pip
 import discord
 from discord.ext import commands
 
-"""
-A function that returns the matching role-id(s) in a list (as integers)
-Needed Arguments: Comamnd-Context and Role-ID/ Role-Mention/ Role-Name (as a string)
 
-The function will return a tuple of values that contains two values:
-- A list with all matching role-id (should be one most of the times)
-- The length of that list as secondary return value
+def get_rid(ctx, role_input: Union[list, Tuple]) -> Tuple[List[int], int]:
+    """
+    :param ctx: Command-Context from discord.py
+    :param role_input: Role-ID/ Role-Mention/ Role-Name (as string(s) in list)
 
-Notice: By passing a name into the function you might get more than one result, keep this in mind!
+    A function that returns the matching role-id(s) in a list (as integers)
 
-Exaple call: role, length = get_rid(ctx, role_name)
-"""
+    The function will return a tuple of values that contains two values:
+    - A list with all matching role-id (should be one most of the times)
+    - The length of that list as secondary return value
 
+    Notice: By passing a name into the function you might get more than one result, keep this in mind!
 
-def get_rid(ctx, role_input: list) -> Tuple[list, int]:
+    Example call: role, length = get_rid(ctx, role_name)
+
+    :returns: A list with all possible role IDs and the number of results as secondary parameter
+    """
+
     role_name = ""
     for obj in role_input:
         role_name += "%s " % obj
@@ -27,7 +31,7 @@ def get_rid(ctx, role_input: list) -> Tuple[list, int]:
     # first trying regex to get the id from the message itself (is the case by mention or role ID as intput)
     role_id = re.search(r"\d{18}", role_name)
     roles_list = []  # initializing return list
-    if role_id != None:  # checking if re found something
+    if role_id is not None:  # checking if re found something
         role_id = role_id.group(0)  # getting readable id
         roles_list.append(int(role_id))  # getting and appending role-id to list
     # return roles_list, len(roles_list)
@@ -46,14 +50,14 @@ def get_rid(ctx, role_input: list) -> Tuple[list, int]:
 def get_chan(guild, channel_input: str):
     channel_id = re.search(r"\d{18}", channel_input)
     channel = None
-    if channel_id != None:
+    if channel_id is not None:
         channel_id = channel_id.group(0)
         channel = guild.get_channel(int(channel_id))
     return channel  # returning channel object
 
 
 # creating and returning an embed with keyword arguments
-# please note that name and value cant't be empty - good news: they aren't ;)
+# please note that name and value can't be empty - good news: they aren't ;)
 def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", text=None):
     emby = discord.Embed(title=title, color=color)
     emby.add_field(name=name, value=value)
@@ -63,28 +67,26 @@ def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", te
     return emby
 
 
-"""
-this function takes a (massive) list and fits it into embeds.
-yes - this can take multiple embeds which will be created if needed
-emby: put your first embed that you already created
-head: 
-"""
-
-
 def make_emby(emby, head, content, embed_limit=1, field_limit=3, char_limit=980, color=discord.Color.green(),
               footer=""):
+    """
+    this function takes a (massive) list and fits it into embeds.
+    yes - this can take multiple embeds which will be created if needed
+    emby: put your first embed that you already created
+    head:
+    """
     # switcher to make for a more appealing view by only listing the headder once over all emebeds
-    switch_headder = {
+    switch_header = {
         0: head,
         1: ""
     }
 
     field_text = ""  # text that fits into a field
     embys = []  # will store all embed objects in a list
-    embed_num = 0  # couting embeds - important for breaklimit
+    embed_num = 0  # counting embeds - important for break limit
     field_num = 0  # field counter - max 24 possible (here used by default: 6)
-    first_emb = 0  # will be switch to one after first headder is written (see switcher)
-    i = 1  # counter to display a name above each field like "entry 1 to 40", starting by one beacuase "normal" counting
+    first_emb = 0  # will be switch to one after first header is written (see switcher)
+    i = 1  # counter to display a name above each field like "entry 1 to 40", starting by one because "normal" counting
     last_i = 1  # stores the last value from i when a embed was created
 
     for line in content:
@@ -95,7 +97,7 @@ def make_emby(emby, head, content, embed_limit=1, field_limit=3, char_limit=980,
             embys.append(emby)  # appending
             emby = discord.Embed(title="", color=color)  # creating
             field_num = 0  # resetting field-number
-            first_emb = 1  # disabeling headder (see switch)
+            first_emb = 1  # disabling header (see switch)
             embed_num += 1
 
         # when embed limit is reached
@@ -103,17 +105,17 @@ def make_emby(emby, head, content, embed_limit=1, field_limit=3, char_limit=980,
             embys.append(emby)
             break
 
-        # buliding the actual text of the field
-        # we need to ensure that the charackters wont exceed 1024 characters
-        # so the next line will be calculated before beeing added
+        # building the actual text of the field
+        # we need to ensure that the characters wont exceed 1024 characters
+        # so the next line will be calculated before being added
         next_text = field_text + "%s\n" % line  # building text with the next line
 
         # making embed field if field is filled (char_limit is by default 1000)
         if len(next_text) >= char_limit:
 
-            # making right headder
+            # making right header
             if field_num == 0:
-                headder = switch_headder.get(first_emb)
+                headder = switch_header.get(first_emb)
                 headder += "\n%s to %s" % (last_i, i - 1)
                 emby.add_field(name=headder, value=field_text)
                 last_i = i
@@ -123,7 +125,7 @@ def make_emby(emby, head, content, embed_limit=1, field_limit=3, char_limit=980,
                 emby.add_field(name=name, value=field_text)
                 last_i = i
 
-            # incrementing and overwriting fieldtext with the new line
+            # incrementing and overwriting field text with the new line
             field_num += 1
             field_text = line
 
@@ -131,7 +133,7 @@ def make_emby(emby, head, content, embed_limit=1, field_limit=3, char_limit=980,
             field_text = next_text
             i += 1
 
-    # when for-loop is finished, there will be a textblock that didn't reach the limits and isn't added yet
+    # when for-loop is finished, there will be a textbook that didn't reach the limits and isn't added yet
     # checking if it exists and adding it to the last embed
     # there is always a place in the last embed, otherwise it would have been finished when reaching 6 fields
     if field_text != "" and embed_num != embed_limit:
