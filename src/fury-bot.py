@@ -53,13 +53,16 @@ if __name__ == '__main__':
 async def on_ready():
     print(f'{bot.user.name} has connected')
     guild = discord.utils.get(bot.guilds)  # , name=GUILD)
-    await bot.change_presence(
-        activity=discord.Activity(type=discord.ActivityType.watching, name=f"type {config.PREFIX}help to start"))
-    print('Bot is connected to the following guilds')
+
+    print(f'Bot is connected to the following guilds:')
     print()
+    member_count = 0
     for g in bot.guilds:
-        print(g, g.id)
+        print(f"{g.name} - {g.id} - Members: {g.member_count}")
+        member_count += g.member_count
     print()
+    await bot.change_presence(
+        activity=discord.Activity(type=discord.ActivityType.watching, name=f"{config.PREFIX}help"))
 
 
 # error message if user has not right permissions
