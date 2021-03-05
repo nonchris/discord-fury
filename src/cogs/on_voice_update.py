@@ -16,8 +16,10 @@ global db_file
 db_file = config.DB_NAME
 
 
-async def make_channel(voice_state: discord.VoiceState, member: discord.Member, voice_overwrites: discord.PermissionOverwrite,
-                       vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[discord.TextChannel, discord.VoiceChannel]:
+async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
+                       voice_overwrites: discord.PermissionOverwrite,
+                       vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[
+    discord.TextChannel, discord.VoiceChannel]:
     """
     Method to create a voice-channel with linked text-channel logging to DB included\n
     -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
@@ -226,7 +228,9 @@ class VoiceChannelCreator(commands.Cog):
                 if ch_type == "priv":  # giving member special perms when private channel
                     v_overwrites = {
                         # give member connect and manage rights
-                        member.guild.default_role: discord.PermissionOverwrite(connect=False)
+                        member.guild.default_role: discord.PermissionOverwrite(connect=False),
+                        member: discord.PermissionOverwrite(manage_channels=True, manage_permissions=True,
+                                                            connect=True)
                     }
 
                 # checking if users should have rights to rename pub channel
@@ -241,6 +245,9 @@ class VoiceChannelCreator(commands.Cog):
                         def_role = member.guild.default_role
                     # give he default role default perms
                     # and creator rename rights
+                if checker.get_edit_perms() and ch_type == "pub":
+                    # set default overwrites
+                    # and give creator channel-rename rights
                     v_overwrites = after.channel.category.overwrites
                     v_overwrites[member] = discord.PermissionOverwrite(manage_channels=True,
                                                                        connect=True)
