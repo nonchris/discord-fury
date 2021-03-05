@@ -16,9 +16,7 @@ import utils
 def write_log(ctx, file_name, content):
     # checking if folder exists and creating if needed
     server_dir = ctx.guild.id
-    if os.path.isdir('./data/%s' % server_dir):
-        None
-    else:
+    if not os.path.isdir('./data/%s' % server_dir):
         os.mkdir('./data/%s' % server_dir)
         # writing current name of the guild as file
         # preventing from trying to create an sub folder
@@ -26,9 +24,7 @@ def write_log(ctx, file_name, content):
 
     # checking if file exists and creating if needed
     file_path = file_name
-    if os.path.isfile(file_path):
-        None
-    else:
+    if not os.path.isfile(file_path):
         open(file_path, "w").close()
 
     data = content
@@ -65,7 +61,7 @@ class Admin(commands.Cog):
                 member = ctx.guild.get_member(user.id)
                 if member == None:
                     pass
-                elif len(member.roles) == 1:
+                if len(member.roles) == 1:
                     print(member)
                     await member.add_roles(role, reason="Reaction bot didn't work")
                     i += 1
@@ -87,9 +83,9 @@ class Admin(commands.Cog):
             for role in member.roles:  # getting all roles of member
                 # print(role)
                 if role.id == member.guild.default_role.id:  # skipping if role is @everyone role
-                    None
+                    pass
                 elif role.managed:  # skipping if role is managed, e.g. bot-role
-                    None
+                    pass
                 else:  # saving role
                     # string that contains member-name,memberID,role,roleID, date
                     restore_string += "%s; %s; %s; %s\n" % (

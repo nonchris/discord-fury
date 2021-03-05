@@ -132,7 +132,7 @@ channel_names = {"pub": [["╠{0}'s discussion", "{0}'s discussion"],
                  }
 
 
-class VoiceChannelCreator(commands.Cog):
+class VCCreator(commands.Cog):
     """
 	Contains the setup-voice command and the listener itself
 	"""
@@ -295,5 +295,6 @@ class VoiceChannelCreator(commands.Cog):
                 await t_channel.edit(overwrites=overwrites)
 
 
+
 def setup(bot):
-    bot.add_cog(VoiceChannelCreator(bot))
+    bot.add_cog(VCCreator(bot))
