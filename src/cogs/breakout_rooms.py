@@ -13,7 +13,7 @@ from cogs.on_voice_update import make_channel
 
 class Breakout(commands.Cog):
     """
-    Commands for creating and managing breakout rooms (kick permissions required for execution)
+    Create and manage breakout rooms (kick permissions required for execution)
     """
 
     def __init__(self, bot):

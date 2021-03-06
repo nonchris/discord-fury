@@ -16,8 +16,10 @@ global db_file
 db_file = config.DB_NAME
 
 
-async def make_channel(voice_state: discord.VoiceState, member: discord.Member, voice_overwrites: discord.PermissionOverwrite,
-                       vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[discord.TextChannel, discord.VoiceChannel]:
+async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
+                       voice_overwrites: discord.PermissionOverwrite,
+                       vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[
+    discord.TextChannel, discord.VoiceChannel]:
     """
     Method to create a voice-channel with linked text-channel logging to DB included\n
     -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
@@ -130,16 +132,17 @@ channel_names = {"pub": [["╠{0}'s discussion", "{0}'s discussion"],
                  }
 
 
-class VoiceChannelCreator(commands.Cog):
+class VCCreator(commands.Cog):
     """
 	Contains the setup-voice command and the listener itself
 	"""
 
     @commands.command(name="setup-voice", help="Creates a voice category, \
-				including a public and a private creation channel.\
-				Those channels will contain no specified settings.\
-				Enter a role [id | mention] to add give this role the access permissions -\
-				everyone role will be disabled")
+				including a public and a private creation channel.\n\
+				This category not will contain any specified settings.\n\
+				Enter a role [id or mention] to give only this role join permissions -\
+				the everyone role will be disabled\n\nExample: `f!setup-voice @PI`\n\n\
+                You can customize those settings like on any other channel this is just to give you a better start.")
     @commands.has_permissions(administrator=True)
     async def setup_voice(self, ctx, role=None):
         await ctx.trigger_typing()
@@ -226,21 +229,16 @@ class VoiceChannelCreator(commands.Cog):
                 if ch_type == "priv":  # giving member special perms when private channel
                     v_overwrites = {
                         # give member connect and manage rights
-                        member.guild.default_role: discord.PermissionOverwrite(connect=False)
+                        member.guild.default_role: discord.PermissionOverwrite(connect=False),
+                        member: discord.PermissionOverwrite(manage_channels=True, manage_permissions=True,
+                                                            connect=True)
                     }
 
                 # checking if users should have rights to rename pub channel
                 # channels can't be synced anymore - need to set general role permissions
-                if checker.get_edit_perms():
-                    # checking for new custom-default role
-                    def_role = checker.default_role()
-                    if def_role is not None:
-                        def_role = member.guild.get_role(def_role)
-                    # taking standard default role
-                    else:
-                        def_role = member.guild.default_role
-                    # give he default role default perms
-                    # and creator rename rights
+                if checker.get_edit_perms() and ch_type == "pub":
+                    # set default overwrites
+                    # and give creator channel-rename rights
                     v_overwrites = after.channel.category.overwrites
                     v_overwrites[member] = discord.PermissionOverwrite(manage_channels=True,
                                                                        connect=True)
@@ -299,4 +297,4 @@ class VoiceChannelCreator(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(VoiceChannelCreator(bot))
+    bot.add_cog(VCCreator(bot))

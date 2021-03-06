@@ -43,7 +43,7 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(aliases=['h', 'hilfe'])
     # @commands.bot_has_permissions(add_reactions=True,embed_links=True)
     async def help(self, ctx, *input):
         """Shows all modules of that bot"""
@@ -61,12 +61,15 @@ class Help(commands.Cog):
 
             # starting to build embed
             emb = discord.Embed(title='Commands and modules', color=discord.Color.blue(),
-                                description=f'Use `{prefix}help <module>` to gain more information about that module '
+                                description=f'Use `{prefix}h <module>` to gain more information about that module '
                                             f':smiley:\n')
 
             # iterating trough cogs, gathering descriptions
             cogs_desc = ''
             for cog in self.bot.cogs:
+                # ignoring boring cogs
+                if cog == "MessageListener" or cog == "Help":
+                    continue
                 cogs_desc += f'`{cog}` {self.bot.cogs[cog].__doc__}\n'
 
             # adding 'list' of cogs to embed
@@ -107,7 +110,7 @@ class Help(commands.Cog):
                     for command in self.bot.get_cog(cog).get_commands():
                         # if cog is not hidden
                         if not command.hidden:
-                            emb.add_field(name=f"`{config.PREFIX}{command.name}`", value=command.help, inline=False)
+                            emb.add_field(name=f"{config.PREFIX}{command.name}", value=command.help, inline=False)
                     # found cog - breaking loop
                     break
 
