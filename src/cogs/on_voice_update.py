@@ -138,10 +138,11 @@ class VCCreator(commands.Cog):
 	"""
 
     @commands.command(name="setup-voice", help="Creates a voice category, \
-				including a public and a private creation channel.\
-				Those channels will contain no specified settings.\
-				Enter a role [id | mention] to add give this role the access permissions -\
-				everyone role will be disabled")
+				including a public and a private creation channel.\n\
+				This category not will contain any specified settings.\n\
+				Enter a role [id or mention] to give only this role join permissions -\
+				the everyone role will be disabled\n\nExample: `f!setup-voice @PI`\n\n\
+                You can customize those settings like on any other channel this is just to give you a better start.")
     @commands.has_permissions(administrator=True)
     async def setup_voice(self, ctx, role=None):
         await ctx.trigger_typing()
@@ -293,7 +294,6 @@ class VCCreator(commands.Cog):
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 t_channel, overwrites = update_text_channel(cchannel)
                 await t_channel.edit(overwrites=overwrites)
-
 
 
 def setup(bot):
