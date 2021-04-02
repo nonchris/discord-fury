@@ -24,9 +24,11 @@ steps:
       from_secret: DOCKER_USERNAME
     password:
       from_secret: DOCKER_PASSWORD
+    auto_tag: true
   when:
     branch:
     - master
     event:
     - push
+    - tag
     - cron
