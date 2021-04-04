@@ -86,10 +86,10 @@ class Settings(commands.Cog):
         log = "__Log Channel__\n"
         archive = "__Archive Category__\n"
         for i in range(len(results)):  # building strings
-            if results[i].setting == "pub-channel":
+            if results[i].setting == "pub-channel" or results[i].setting == "pub":
                 pub += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
 
-            elif results[i].setting == "priv-channel":
+            elif results[i].setting == "priv-channel" or results[i].setting == "priv":
                 priv += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
 
             elif results[i].setting == "log":
