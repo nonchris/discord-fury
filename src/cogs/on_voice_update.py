@@ -68,8 +68,12 @@ class EventCheck:
         # accessing db and searching for settings - building a dict
         self.channel_dict = {obj.value_id: "pub"
                              for obj in self.db.search_table(value="pub-channel", column="setting")}
+        self.channel_dict.update({obj.value_id: "pub"
+                                  for obj in self.db.search_table(value="pub", column="setting")})
         self.channel_dict.update({obj.value_id: "priv"
                                   for obj in self.db.search_table(value="priv-channel", column="setting")})
+        self.channel_dict.update({obj.value_id: "priv"
+                                  for obj in self.db.search_table(value="priv", column="setting")})
 
         try:  # return keyword "pub" or "priv", if channel id in dict
             return self.channel_dict[self.after.channel.id]
