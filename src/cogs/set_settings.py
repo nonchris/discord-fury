@@ -33,13 +33,13 @@ class Settings(commands.Cog):
     async def set_voice(self, ctx, setting: str, value: str):
         # possible settings switch -returns same value but nothing if key isn't valid
         settings = {
-            "pub-channel": utils.get_chan(ctx.guild, value),
-            "pub": utils.get_chan(ctx.guild, value),
-            "priv-channel": utils.get_chan(ctx.guild, value),
-            "priv": utils.get_chan(ctx.guild, value)
+            "pub-channel": ("pub", utils.get_chan(ctx.guild, value)),
+            "pub": ("pub", utils.get_chan(ctx.guild, value)),
+            "priv-channel": ("priv", utils.get_chan(ctx.guild, value)),
+            "priv": ("priv", utils.get_chan(ctx.guild, value)),
         }
         # trying to get a corresponding channel / id
-        value = settings.get(setting)
+        setting, value = settings.get(setting)
         # if value is "None" this means that there is no such setting or no such value for it
         # -> ensures that the process of getting a correct setting has worked
         if value is not None and value.type == discord.ChannelType.voice:
