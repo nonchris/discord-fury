@@ -174,23 +174,25 @@ class VCCreator(commands.Cog):
                                                        reason="Created voice setup")
         db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
         # checking if db has three entries for one of those settings
-        if len(db.search_table(value="pub-channel", column="setting")) < config.SET_LIMIT \
-                or len(db.search_table(value="priv-channel", column="setting")) < config.SET_LIMIT:
+        if len(db.search_table(value="pub-channel", column="setting")) + \
+                len(db.search_table(value="pub", column="setting")) < config.SET_LIMIT \
+                and len(db.search_table(value="priv-channel", column="setting")) + \
+                len(db.search_table(value="priv", column="setting")) < config.SET_LIMIT:
             db.write_server_table(
-                ("pub-channel", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("pub", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
             db.write_server_table(
-                ("priv-channel", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("priv", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 
             await ctx.send(embed=utils.make_embed(name="Sucessfully setup voice category",
                                                   value="You're category is set, have fun!\n \
 						Oh, yeah - you can change the channel names how ever you like :)", color=discord.Color.green()))
 
         else:  # if channel max was reached
-            await ctx.send(embed=utils.make_embed(name="Too many channels!",
+            await ctx.send(embed=utils.make_embed(name="Too many channels!", color=discord.Color.orange(),
                                                   value=f"Hey, you can't make me watch more than {config.SET_LIMIT} channels per creation type.\n\
 							If you wanna change the channels I watch use \
 							`{config.PREFIX}ds [channel-id]` to remove a channel from your settings\n \
-							The channels were created but aren't watched, have a look at `{config.PREFIX}help settings`\
+							The channels were **created but aren't watched**, have a look at `{config.PREFIX}help settings`\
 							to add them manually after you removed other watched channels from the settings"))
 
     ##Codename: PANTHEON
