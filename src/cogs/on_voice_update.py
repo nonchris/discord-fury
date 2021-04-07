@@ -220,6 +220,17 @@ class VCCreator(commands.Cog):
             overwrites.update(make_overwrite(v_channel.members))
             return t_channel, overwrites
 
+        async def delete_text_channel(tc: discord.TextChannel):
+            """
+            Checks whether channel shall be archived or deleted and executes that action
+            """
+            # checker comes from outer scope
+            if (checker.get_archive()) and tc.last_message is not None:
+                archive = checker.get_archive()
+                await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
+
+            else:  # empty channel
+                await t_channel.delete(reason="Channel is empty and not needed anymore")
         # object that performs checks which cases are true
         checker = EventCheck(member, before, after)
         l_channel = checker.get_log()  # log channel
@@ -278,12 +289,11 @@ class VCCreator(commands.Cog):
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 # check if archive is given and if channel contains messages to archive
                 try:  # trying to archive category - throws an error when category is full
-                    if (checker.get_archive()) and t_channel.last_message != None:
-                        archive = checker.get_archive()
-                        await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
-
-                    else:  # empty channel
-                        await t_channel.delete(reason="Channel is empty and not needed anymore")
+                    # centralized deletion
+                    try:  # if channel was manually deleted - we still want to delete the database entry
+                        await delete_text_channel(t_channel)
+                    except AttributeError:
+                        pass
 
                     checker.del_entry(v_channel.id)  # removing entry from db
                     await v_channel.delete(reason="Channel is empty")
