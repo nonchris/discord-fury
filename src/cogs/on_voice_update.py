@@ -280,7 +280,12 @@ class VCCreator(commands.Cog):
                                                                 color=discord.Color.green()))
 
                 # moving creator to his channel
-                await member.move_to(v_channel, reason=f'{member} issued creation')
+                try:
+                    await member.move_to(v_channel, reason=f'{member} issued creation')
+                # if user already left already
+                except discord.HTTPException as e:
+                    print("Handle HTTP exception during creation of channels - channel was already empty")
+                    await clean_after_exception(v_channel, t_channel)
 
             elif cchannel:  # adding member to textchannel, if member joined created channel
                 t_channel, overwrites = update_text_channel(cchannel)
@@ -302,10 +307,15 @@ class VCCreator(commands.Cog):
                         pass
 
                     checker.del_entry(v_channel.id)  # removing entry from db
-                    await v_channel.delete(reason="Channel is empty")
+                    try:
+                        await v_channel.delete(reason="Channel is empty")
+                    except AttributeError:
+                        pass  # still wanna to do the logging
+
                     if l_channel:  # logging
                         await l_channel.send(embed=utils.make_embed(name="Created Voicechannel",
-                                                                    value=f"{member.mention} created `{v_channel}` with {t_channel.mention}",
+                                                                    value=f"{member.mention} created `{v_channel if v_channel else '`deleted`'}` "
+                                                                          f"with {t_channel.mention if t_channel else '`deleted`'}",
                                                                     color=discord.Color.green()))
 
                 # happens when if archive is full
