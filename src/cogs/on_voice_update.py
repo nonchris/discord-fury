@@ -215,6 +215,8 @@ class VCCreator(commands.Cog):
             v_channel = member.guild.get_channel(cchannel[0].channel)
             t_channel = member.guild.get_channel(cchannel[0].linked_channel)
             overwrites = {member.guild.default_role: discord.PermissionOverwrite(view_channel=False)}
+            if not v_channel:  # return if voice channel is missing / deleted
+                return None, None
             overwrites.update(make_overwrite(v_channel.members))
             return t_channel, overwrites
 
@@ -265,7 +267,8 @@ class VCCreator(commands.Cog):
 
             elif cchannel:  # adding member to textchannel, if member joined created channel
                 t_channel, overwrites = update_text_channel(cchannel)
-                await t_channel.edit(overwrites=overwrites)
+                if t_channel and overwrites:  # can be None
+                    await t_channel.edit(overwrites=overwrites)
 
         if before.channel:  # if member leaves channel
             cchannel = checker.is_created_channel(before.channel.id)
@@ -299,7 +302,8 @@ class VCCreator(commands.Cog):
             elif cchannel:  # removing member from textchannel when left
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 t_channel, overwrites = update_text_channel(cchannel)
-                await t_channel.edit(overwrites=overwrites)
+                if t_channel and overwrites:
+                    await t_channel.edit(overwrites=overwrites)
 
 
 def setup(bot):
