@@ -289,7 +289,8 @@ class VCCreator(commands.Cog):
 
             elif cchannel:  # adding member to textchannel, if member joined created channel
                 t_channel, overwrites = update_text_channel(cchannel)
-                if t_channel and overwrites:  # can be None
+                # is none when voice channel was deleted - skip edit - deletion should happen in an other event
+                if t_channel and overwrites:
                     await t_channel.edit(overwrites=overwrites)
 
         if before.channel:  # if member leaves channel
@@ -328,6 +329,7 @@ class VCCreator(commands.Cog):
             elif cchannel:  # removing member from textchannel when left
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 t_channel, overwrites = update_text_channel(cchannel)
+                # is none when voice channel was deleted - skip edit - deletion should happen in an other event
                 if t_channel and overwrites:
                     await t_channel.edit(overwrites=overwrites)
 
