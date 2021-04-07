@@ -231,6 +231,12 @@ class VCCreator(commands.Cog):
 
             else:  # empty channel
                 await t_channel.delete(reason="Channel is empty and not needed anymore")
+
+        async def clean_after_exception(vc: discord.VoiceChannel, tc: discord.TextChannel):
+            """ Cleanup routine that handles the deletion / activation of a voice- and text-channel"""
+            await vc.delete(reason="An error occurred - user most likely left the channel during the process")
+            await delete_text_channel(tc)
+
         # object that performs checks which cases are true
         checker = EventCheck(member, before, after)
         l_channel = checker.get_log()  # log channel
