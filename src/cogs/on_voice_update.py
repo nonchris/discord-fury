@@ -19,7 +19,7 @@ db_file = config.DB_NAME
 async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
                        voice_overwrites: discord.PermissionOverwrite,
                        vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[
-    discord.TextChannel, discord.VoiceChannel]:
+    discord.VoiceChannel, discord.TextChannel]:
     """
     Method to create a voice-channel with linked text-channel logging to DB included\n
     -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
