@@ -5,12 +5,27 @@ from sqlite3 import Error
 #own files
 import data.config as config
 
+"""
+YES - This code IS vulnerable for SQL injections - I know it's is flawed...
+
+BUT: there is no direct user-input passed into these statements
+All string entries are hardcoded / mapped trough a dict that is controlled via user input as key
+and every integer comes directly from the discord API
+
+So there should be nothing to worry about.
+If you detect a weakness, please open an issue on GitHub
+Or if you're interested into doing a rewrite using SQLAlchemy, sure! Let's work together ^^
+
+I might do this on my own at some point, but not now...
+"""
+
+
 def get_sql(setting, table_name, column="setting", name=None):
     """
     Every list contained in the dicts has the follwoing parameters:
     [0] CREATE TABLE
     [1] Basic INSERT INTO   - full line
-    [2] Basisc SELECT *     - selects all
+    [2] Basic SELECT *     - selects all
     [3] Select WHERE =      - searches for string in column
     """
 

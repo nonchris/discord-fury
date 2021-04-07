@@ -19,7 +19,7 @@ db_file = config.DB_NAME
 async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
                        voice_overwrites: discord.PermissionOverwrite,
                        vc_name="voice-channel", tc_name="text-channel", channel_type="pub") -> Tuple[
-    discord.TextChannel, discord.VoiceChannel]:
+    discord.VoiceChannel, discord.TextChannel]:
     """
     Method to create a voice-channel with linked text-channel logging to DB included\n
     -> VCs created with this method are meant to be deleted later on, therefore they're logged to DB
@@ -68,8 +68,12 @@ class EventCheck:
         # accessing db and searching for settings - building a dict
         self.channel_dict = {obj.value_id: "pub"
                              for obj in self.db.search_table(value="pub-channel", column="setting")}
+        self.channel_dict.update({obj.value_id: "pub"
+                                  for obj in self.db.search_table(value="pub", column="setting")})
         self.channel_dict.update({obj.value_id: "priv"
                                   for obj in self.db.search_table(value="priv-channel", column="setting")})
+        self.channel_dict.update({obj.value_id: "priv"
+                                  for obj in self.db.search_table(value="priv", column="setting")})
 
         try:  # return keyword "pub" or "priv", if channel id in dict
             return self.channel_dict[self.after.channel.id]
@@ -170,23 +174,25 @@ class VCCreator(commands.Cog):
                                                        reason="Created voice setup")
         db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
         # checking if db has three entries for one of those settings
-        if len(db.search_table(value="pub-channel", column="setting")) < config.SET_LIMIT \
-                or len(db.search_table(value="priv-channel", column="setting")) < config.SET_LIMIT:
+        if len(db.search_table(value="pub-channel", column="setting")) + \
+                len(db.search_table(value="pub", column="setting")) < config.SET_LIMIT \
+                and len(db.search_table(value="priv-channel", column="setting")) + \
+                len(db.search_table(value="priv", column="setting")) < config.SET_LIMIT:
             db.write_server_table(
-                ("pub-channel", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("pub", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
             db.write_server_table(
-                ("priv-channel", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("priv", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
 
             await ctx.send(embed=utils.make_embed(name="Sucessfully setup voice category",
                                                   value="You're category is set, have fun!\n \
 						Oh, yeah - you can change the channel names how ever you like :)", color=discord.Color.green()))
 
         else:  # if channel max was reached
-            await ctx.send(embed=utils.make_embed(name="Too many channels!",
+            await ctx.send(embed=utils.make_embed(name="Too many channels!", color=discord.Color.orange(),
                                                   value=f"Hey, you can't make me watch more than {config.SET_LIMIT} channels per creation type.\n\
 							If you wanna change the channels I watch use \
 							`{config.PREFIX}ds [channel-id]` to remove a channel from your settings\n \
-							The channels were created but aren't watched, have a look at `{config.PREFIX}help settings`\
+							The channels were **created but aren't watched**, have a look at `{config.PREFIX}help settings`\
 							to add them manually after you removed other watched channels from the settings"))
 
     ##Codename: PANTHEON
@@ -209,8 +215,27 @@ class VCCreator(commands.Cog):
             v_channel = member.guild.get_channel(cchannel[0].channel)
             t_channel = member.guild.get_channel(cchannel[0].linked_channel)
             overwrites = {member.guild.default_role: discord.PermissionOverwrite(view_channel=False)}
+            if not v_channel:  # return if voice channel is missing / deleted
+                return None, None
             overwrites.update(make_overwrite(v_channel.members))
             return t_channel, overwrites
+
+        async def delete_text_channel(tc: discord.TextChannel):
+            """
+            Checks whether channel shall be archived or deleted and executes that action
+            """
+            # checker comes from outer scope
+            if (checker.get_archive()) and tc.last_message is not None:
+                archive = checker.get_archive()
+                await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
+
+            else:  # empty channel
+                await t_channel.delete(reason="Channel is empty and not needed anymore")
+
+        async def clean_after_exception(vc: discord.VoiceChannel, tc: discord.TextChannel):
+            """ Cleanup routine that handles the deletion / activation of a voice- and text-channel"""
+            await vc.delete(reason="An error occurred - user most likely left the channel during the process")
+            await delete_text_channel(tc)
 
         # object that performs checks which cases are true
         checker = EventCheck(member, before, after)
@@ -255,11 +280,18 @@ class VCCreator(commands.Cog):
                                                                 color=discord.Color.green()))
 
                 # moving creator to his channel
-                await member.move_to(v_channel, reason=f'{member} issued creation')
+                try:
+                    await member.move_to(v_channel, reason=f'{member} issued creation')
+                # if user already left already
+                except discord.HTTPException as e:
+                    print("Handle HTTP exception during creation of channels - channel was already empty")
+                    await clean_after_exception(v_channel, t_channel)
 
             elif cchannel:  # adding member to textchannel, if member joined created channel
                 t_channel, overwrites = update_text_channel(cchannel)
-                await t_channel.edit(overwrites=overwrites)
+                # is none when voice channel was deleted - skip edit - deletion should happen in an other event
+                if t_channel and overwrites:
+                    await t_channel.edit(overwrites=overwrites)
 
         if before.channel:  # if member leaves channel
             cchannel = checker.is_created_channel(before.channel.id)
@@ -269,18 +301,22 @@ class VCCreator(commands.Cog):
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 # check if archive is given and if channel contains messages to archive
                 try:  # trying to archive category - throws an error when category is full
-                    if (checker.get_archive()) and t_channel.last_message != None:
-                        archive = checker.get_archive()
-                        await t_channel.edit(category=archive, reason="Voice is empty, this channel not")
-
-                    else:  # empty channel
-                        await t_channel.delete(reason="Channel is empty and not needed anymore")
+                    # centralized deletion
+                    try:  # if channel was manually deleted - we still want to delete the database entry
+                        await delete_text_channel(t_channel)
+                    except AttributeError:
+                        pass
 
                     checker.del_entry(v_channel.id)  # removing entry from db
-                    await v_channel.delete(reason="Channel is empty")
+                    try:
+                        await v_channel.delete(reason="Channel is empty")
+                    except AttributeError:
+                        pass  # still wanna to do the logging
+
                     if l_channel:  # logging
                         await l_channel.send(embed=utils.make_embed(name="Created Voicechannel",
-                                                                    value=f"{member.mention} created `{v_channel}` with {t_channel.mention}",
+                                                                    value=f"{member.mention} created `{v_channel if v_channel else '`deleted`'}` "
+                                                                          f"with {t_channel.mention if t_channel else '`deleted`'}",
                                                                     color=discord.Color.green()))
 
                 # happens when if archive is full
@@ -293,7 +329,9 @@ class VCCreator(commands.Cog):
             elif cchannel:  # removing member from textchannel when left
                 t_channel = member.guild.get_channel(cchannel[0].linked_channel)
                 t_channel, overwrites = update_text_channel(cchannel)
-                await t_channel.edit(overwrites=overwrites)
+                # is none when voice channel was deleted - skip edit - deletion should happen in an other event
+                if t_channel and overwrites:
+                    await t_channel.edit(overwrites=overwrites)
 
 
 def setup(bot):

@@ -33,13 +33,13 @@ class Settings(commands.Cog):
     async def set_voice(self, ctx, setting: str, value: str):
         # possible settings switch -returns same value but nothing if key isn't valid
         settings = {
-            "pub-channel": utils.get_chan(ctx.guild, value),
-            "pub": utils.get_chan(ctx.guild, value),
-            "priv-channel": utils.get_chan(ctx.guild, value),
-            "priv": utils.get_chan(ctx.guild, value)
+            "pub-channel": ("pub", utils.get_chan(ctx.guild, value)),
+            "pub": ("pub", utils.get_chan(ctx.guild, value)),
+            "priv-channel": ("priv", utils.get_chan(ctx.guild, value)),
+            "priv": ("priv", utils.get_chan(ctx.guild, value)),
         }
         # trying to get a corresponding channel / id
-        value = settings.get(setting)
+        setting, value = settings.get(setting)
         # if value is "None" this means that there is no such setting or no such value for it
         # -> ensures that the process of getting a correct setting has worked
         if value is not None and value.type == discord.ChannelType.voice:
@@ -86,10 +86,10 @@ class Settings(commands.Cog):
         log = "__Log Channel__\n"
         archive = "__Archive Category__\n"
         for i in range(len(results)):  # building strings
-            if results[i].setting == "pub-channel":
+            if results[i].setting == "pub-channel" or results[i].setting == "pub":
                 pub += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
 
-            elif results[i].setting == "priv-channel":
+            elif results[i].setting == "priv-channel" or results[i].setting == "priv":
                 priv += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
 
             elif results[i].setting == "log":
