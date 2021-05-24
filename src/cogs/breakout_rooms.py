@@ -89,7 +89,7 @@ class Breakout(commands.Cog):
                             Closing all break-out rooms on server\n
                             Members in those channels will be moved to your channel\n
                             Break out rooms will be deleted
-                            Text channels will be deleted or archived -> settings.\n
+                            Text channels will be deleted or archived -> settings\n
                             Alias: `{config.PREFIX}cloro`
                             """)
     @commands.has_permissions(kick_members=True)

@@ -15,7 +15,7 @@ class Misc(commands.Cog,):
 
 	#A command that behaves like dynos "members" command but with a split between bots and humans and an included member-count
 	#There are serval options like that admins can display more members on request
-	@commands.command(name="members", help="Get a list and count of members that have a specific role e.g. `%smembers @role`\nThis command accepts an id, a mention or a name"
+	@commands.command(name="members", help="Get a list and count of members that have a specific role e.g. `%smembers @role`\nThis command accepts an id, a mention or a name "
 						"If you're an administrator your embeds will be larger and you're able to add an optional parameter to get a list that contains more than one embed."
 						"Example: `%smembers 3 everyone` will give you three embeded messages packed with names of members" %(config.PREFIX, config.PREFIX))
 	async def members(self, ctx, *role: str):
@@ -135,7 +135,7 @@ class Misc(commands.Cog,):
 			emby.set_footer(text="If you did everything right and this error keeps occuring, please contact the bot owner %s" %config.OWNER_NAME)
 			await ctx.send(embed = emby)
 
-	@commands.command(name='ping', help="Check if Bot available")
+	@commands.command(name='ping', help="Check if the Bot is available")
 	async def ping(self, ctx):
 		print("ping: %s" %round(self.bot.latency * 1000))
 		await ctx.send(f'Bot is available - Ping: ``{round(self.bot.latency * 1000)}ms``')

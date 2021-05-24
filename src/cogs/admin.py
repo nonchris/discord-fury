@@ -35,7 +35,7 @@ def write_log(ctx, file_name, content):
 
 class Admin(commands.Cog):
     """
-    This commands are for the server team, most require admin or owner permissions
+    These commands are for the server team, most require admin or owner permissions
     """
 
     def __init__(self, bot):
