@@ -59,10 +59,13 @@ services:
     environment:
       - UID=1000 
       - GID=1000
+      - TOKEN=
+      - PREFIX=
+      - OWNER_ID=
+      - OWNER_NAME=
+      - CHANNEL_TRACK_LIMIT=
     stdin_open: true
     tty: true
     restart: unless-stopped
 ```
 * Start the bot with `docker-compose`
-* Fill in the variables within the docker-compose file 
-* The bot will restart within 30 seconds
