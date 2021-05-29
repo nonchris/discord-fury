@@ -19,14 +19,14 @@ def load_env(key: str, default: str) -> str:
     value = os.getenv(key)
     if value:
         return value
-    print(f"Can't load env-variable for: '{key}' - falling back to DEFAULT {key}='{default}'")
+
     logger.warning(f"Can't load env-variable for: '{key}' - falling back to DEFAULT {key}='{default}'")
     return default
 
 
 logger = logging.getLogger('my-bot')
 
-TOKEN = os.getenv("TOKEN")  # reading in the token from _config.py file
+TOKEN = os.getenv("TOKEN")  # reading in the token from environment 
 
 # loading optional env variables
 PREFIX = load_env("PREFIX", "b!")
