@@ -4,11 +4,14 @@ from typing import List
 import discord
 from discord.ext import commands
 
+from environment import PREFIX
 import utils
-import data.config as config
 import sql_utils as sqltils
 import cogs.help as hp
 from cogs.on_voice_update import make_channel
+
+# just needed for migration, will be gone in the future
+db_file = "data/fury1.db"
 
 
 class Breakout(commands.Cog):
@@ -21,7 +24,7 @@ class Breakout(commands.Cog):
 
     @commands.command(name="openroom", aliases=["bor", "brout", "break-out", "opro"],
                       help=f"""
-                            Usage: `{config.PREFIX}break-out [members per channel]`\n
+                            Usage: `{PREFIX}break-out [members per channel]`\n
                             Creates breakout channels with given amount of members\n
                             Members must be in same channel as you are
                             The distribution is randomized\n
@@ -29,7 +32,7 @@ class Breakout(commands.Cog):
                             Linked text channels will be created too\n
                             Rooms created with this command behave like other channels created by the bot
                             Empty VCs are deleted. Linked TCs will be deleted or archived as set in the settings\n
-                            Alias: `{config.PREFIX}opro [num]`
+                            Alias: `{PREFIX}opro [num]`
                             """)
     @commands.has_permissions(kick_members=True)
     async def break_out_rooms(self, ctx: discord.ext.commands.Context, *split: str):
@@ -49,14 +52,14 @@ class Breakout(commands.Cog):
             # number too small
             else:
                 await hp.send_embed(ctx, embed=utils.make_embed("Number must be greater than 0", discord.Color.orange(),
-                                                                value=f"Try again :wink:\nExample: `{config.PREFIX}opro 4`"))
+                                                                value=f"Try again :wink:\nExample: `{PREFIX}opro 4`"))
                 return
 
         # type conversion failed
         except (IndexError, ValueError):
             await hp.send_embed(ctx, embed=utils.make_embed("Wrong argument", discord.Color.orange(),
                                                             value=f"Please enter the amount of members per channel\n"
-                                                                  f"Example: `{config.PREFIX}opro 4`"))
+                                                                  f"Example: `{PREFIX}opro 4`"))
             return
 
         # channel invoker is based in
@@ -90,7 +93,7 @@ class Breakout(commands.Cog):
                             Members in those channels will be moved to your channel\n
                             Break out rooms will be deleted
                             Text channels will be deleted or archived -> settings.\n
-                            Alias: `{config.PREFIX}cloro`
+                            Alias: `{PREFIX}cloro`
                             """)
     @commands.has_permissions(kick_members=True)
     async def close_rooms(self, ctx: commands.Context):
@@ -101,7 +104,7 @@ class Breakout(commands.Cog):
             return
 
         # getting break-out rooms from database
-        db = sqltils.DbConn(config.DB_NAME, ctx.guild.id, "created_channels")
+        db = sqltils.DbConn(db_file, ctx.guild.id, "created_channels")
         breakout_rooms: List[sqltils.SQL_to_Obj] = db.search_table(value='"brout"', column="type")
 
         # iterating trough break out rooms, moving members back in main channel

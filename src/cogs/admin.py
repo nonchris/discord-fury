@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 # own
-import data.config as config
+from environment import PREFIX, OWNER_NAME, OWNER_ID
 import utils
 
 
@@ -70,7 +70,7 @@ class Admin(commands.Cog):
     @commands.command(name='backup-roles', aliases=["broles", "br"],
                       help="Creates a backupfile with all roles members have\n"
                            "This can be executed by everyone with kick-permissions \n_Short term:_ `%sbroles`, `%sbr`" % (
-                                   config.PREFIX, config.PREFIX))
+                                   PREFIX, PREFIX))
     @commands.has_permissions(kick_members=True)
     async def backup(self, ctx):  # , member : discord.Member):
         # await ctx.send(ctx.message.guild.members)
@@ -106,12 +106,11 @@ class Admin(commands.Cog):
     # Reverse BACKUP
     # Precise Filename is needed as argument
     @commands.command(name="restore",
-                      help="Restore a backup from file - Usage: `%srestore <file_name>`\nThe filename was given, when the backup was created" % config.PREFIX)
+                      help="Restore a backup from file - Usage: `%srestore <file_name>`\nThe filename was given, when the backup was created" % PREFIX)
     @commands.has_permissions(administrator=True)
     async def re_escalate(self, ctx, file_name: str):
         try:
-            owner = config.OWNER
-            if ctx.message.author.id == owner:  # check if owner
+            if ctx.message.author.id == OWNER_ID:  # check if owner
                 # reading and iteration trough file
                 f = open("data/%s/%s" % (ctx.message.guild.id, file_name), "r")
                 await ctx.message.delete(
@@ -199,9 +198,9 @@ class Admin(commands.Cog):
             emby = discord.Embed(title="", color=discord.Color.red())
             emby.add_field(name="Something went wrong", value="Please check your given argument.\n"
                                                               "Note that name inputs are handled case-sensitive and spaces in names might cause trouble.\n"
-                                                              "Syntax: `%smembers <@role | role id | role name>`" % config.PREFIX)
+                                                              "Syntax: `%smembers <@role | role id | role name>`" % PREFIX)
             emby.set_footer(
-                text="If you did everything right and this error keeps occurring, please contact the bot owner %s" % config.OWNER_NAME)
+                text="If you did everything right and this error keeps occurring, please contact the bot owner %s" % OWNER_NAME)
             await ctx.send(embed=emby)
 
 

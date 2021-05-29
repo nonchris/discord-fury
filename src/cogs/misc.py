@@ -3,7 +3,7 @@ import time
 import discord
 from discord.ext import commands 
 
-import data.config as config
+from environment import PREFIX, VERSION, OWNER_NAME, EMOTE_SWITCH
 import utils
 class Misc(commands.Cog,):
 	"""
@@ -17,7 +17,7 @@ class Misc(commands.Cog,):
 	#There are serval options like that admins can display more members on request
 	@commands.command(name="members", help="Get a list and count of members that have a specific role e.g. `%smembers @role`\nThis command accepts an id, a mention or a name"
 						"If you're an administrator your embeds will be larger and you're able to add an optional parameter to get a list that contains more than one embed."
-						"Example: `%smembers 3 everyone` will give you three embeded messages packed with names of members" %(config.PREFIX, config.PREFIX))
+						"Example: `%smembers 3 everyone` will give you three embeded messages packed with names of members" %(PREFIX, PREFIX))
 	async def members(self, ctx, *role: str):
 		await ctx.trigger_typing()
 		try:
@@ -68,11 +68,11 @@ class Misc(commands.Cog,):
 				for member in role.members: #iterating trough members and adding to list, icreasaing also counter
 
 					#adding a custom emoji that shows the status of the listed member
-					#emotes will be loaded from a switch in config.py
+					#emotes will be loaded from a switch in environment.py
 					if str(member.mobile_status) == "online":
-						status_emoji = self.bot.get_emoji(config.switch_online.get("mobile"))
+						status_emoji = self.bot.get_emoji(EMOTE_SWITCH.get("mobile"))
 					else:
-						status_emoji = self.bot.get_emoji(config.switch_online.get(str(member.status)))
+						status_emoji = self.bot.get_emoji(EMOTE_SWITCH.get(str(member.status)))
 
 					if member.bot == True: #checking if bot
 						i_bots += 1
@@ -131,8 +131,8 @@ class Misc(commands.Cog,):
 			emby = discord.Embed(title="", color=discord.Color.red())
 			emby.add_field(name="Something went wrong", value="Please check your given argument.\n"
 							"Note that name inputs are handled case-sensitive and spaces in names might cause trouble.\n"
-							"Syntax: `%smembers <messages> <@role | role id | role name>`"%config.PREFIX)
-			emby.set_footer(text="If you did everything right and this error keeps occuring, please contact the bot owner %s" %config.OWNER_NAME)
+							"Syntax: `%smembers <messages> <@role | role id | role name>`"%PREFIX)
+			emby.set_footer(text="If you did everything right and this error keeps occuring, please contact the bot owner %s" %OWNER_NAME)
 			await ctx.send(embed = emby)
 
 	@commands.command(name='ping', help="Check if Bot available")
@@ -143,7 +143,7 @@ class Misc(commands.Cog,):
 
 	@commands.command(name='version', aliases=["v"], help="Gives the version this Bot is running on")
 	async def version(self, ctx):
-		await ctx.send("The Bot is running version `%s`" %config.VERSION)
+		await ctx.send("The Bot is running version `%s`" %VERSION)
 
 
 def setup(bot):

@@ -8,12 +8,13 @@ import discord
 from discord.ext import commands
 
 # own files
-import data.config as config
+from environment import PREFIX, CHANNEL_TRACK_LIMIT
 import sql_utils as sqltils
 import utils
 
 global db_file
-db_file = config.DB_NAME
+db_file = "data/fury1.db"  # variables will be gone with the next update
+SQL_VERSION = 1
 
 
 async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
@@ -46,7 +47,7 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
     db = sqltils.DbConn(db_file, member.guild.id, "created_channels")
 
     db.write_server_table((channel_type, v_channel.id, t_channel.id,
-                           time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                           time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION))
 
     return v_channel, t_channel
 
@@ -175,13 +176,13 @@ class VCCreator(commands.Cog):
         db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
         # checking if db has three entries for one of those settings
         if len(db.search_table(value="pub-channel", column="setting")) + \
-                len(db.search_table(value="pub", column="setting")) < config.SET_LIMIT \
+                len(db.search_table(value="pub", column="setting")) < CHANNEL_TRACK_LIMIT \
                 and len(db.search_table(value="priv-channel", column="setting")) + \
-                len(db.search_table(value="priv", column="setting")) < config.SET_LIMIT:
+                len(db.search_table(value="priv", column="setting")) < CHANNEL_TRACK_LIMIT:
             db.write_server_table(
-                ("pub", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("pub", "value_name", pub_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION))
             db.write_server_table(
-                ("priv", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL))
+                ("priv", "value_name", priv_ch.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION))
 
             await ctx.send(embed=utils.make_embed(name="Sucessfully setup voice category",
                                                   value="You're category is set, have fun!\n \
@@ -189,10 +190,10 @@ class VCCreator(commands.Cog):
 
         else:  # if channel max was reached
             await ctx.send(embed=utils.make_embed(name="Too many channels!", color=discord.Color.orange(),
-                                                  value=f"Hey, you can't make me watch more than {config.SET_LIMIT} channels per creation type.\n\
+                                                  value=f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels per creation type.\n\
 							If you wanna change the channels I watch use \
-							`{config.PREFIX}ds [channel-id]` to remove a channel from your settings\n \
-							The channels were **created but aren't watched**, have a look at `{config.PREFIX}help settings`\
+							`{PREFIX}ds [channel-id]` to remove a channel from your settings\n \
+							The channels were **created but aren't watched**, have a look at `{PREFIX}help settings`\
 							to add them manually after you removed other watched channels from the settings"))
 
     ##Codename: PANTHEON

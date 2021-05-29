@@ -8,11 +8,12 @@ import discord
 from discord.ext import commands
 
 # own files
+from environment import PREFIX, CHANNEL_TRACK_LIMIT
 import utils
-import data.config as config
 
 global db_file
-db_file = config.DB_NAME
+db_file = "data/fury1.db"  # variables will be gone with the next update 
+SQL_VERSION = 1
 
 
 class Settings(commands.Cog):
@@ -26,7 +27,7 @@ class Settings(commands.Cog):
     @commands.command(name="set-voice-channel", aliases=["set-voice", "svc"],
                       help=f"Allows you to register a voice channel that members can join into to get an own channel\n\n \
         Usage: \
-        `{config.PREFIX}svc` [_pub_ | _priv_] [_channel-id_]\n\n \
+        `{PREFIX}svc` [_pub_ | _priv_] [_channel-id_]\n\n \
         _pub_ and _priv_ are the options for the channels that are created when joining the creation-channel.\n \
         This option is - obviously - admin only")
     @commands.has_permissions(administrator=True)
@@ -49,16 +50,16 @@ class Settings(commands.Cog):
 
             # Settings won't be stored if max watched channels are reached
             # -> searching for amount of matching entries
-            if len(db.search_table(value=setting, column="setting")) >= config.SET_LIMIT:
+            if len(db.search_table(value=setting, column="setting")) >= CHANNEL_TRACK_LIMIT:
 
-                text = f"Hey, you can't make me watch more than {config.SET_LIMIT} channels for this setting\n \
-                        If you wanna change the channels I watch use `{config.PREFIX}ds [channel-id]` to remove a channel from your settings"
+                text = f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels for this setting\n \
+                        If you wanna change the channels I watch use `{PREFIX}ds [channel-id]` to remove a channel from your settings"
                 emby = utils.make_embed(color=discord.Color.orange(), name="Too many entries", value=text)
                 await ctx.send(embed=emby)
 
             # writing entry to db - the way things sould go
             else:
-                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL)
+                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
                 db.write_server_table(entry)
 
                 emby = utils.make_embed(color=discord.Color.green(), name="Success", value="Setting saved")
@@ -72,7 +73,7 @@ class Settings(commands.Cog):
             await ctx.send(embed=emby)
 
     @commands.command(name="get-settings", aliases=["gs"], help=f"\
-                                Get a list of all watched 'create-voice' channels - short: `{config.PREFIX}gs`")
+                                Get a list of all watched 'create-voice' channels - short: `{PREFIX}gs`")
     @commands.has_permissions(kick_members=True)
     async def get_settings(self, ctx):
         """
@@ -105,8 +106,8 @@ class Settings(commands.Cog):
     @commands.command(name="delete-setting", aliases=["ds"],
                       help=f"Remove a channel from the list of watched 'create-voice' channels. \n\
                         This command will only untrack the channel, it will _not_ delete anything on your server.\n\n\
-                        Usage: `{config.PREFIX}ds` [_channel-id_]\n\n\
-                        Get a list of all watched channels with `{config.PREFIX}gs`\n ")
+                        Usage: `{PREFIX}ds` [_channel-id_]\n\n\
+                        Get a list of all watched channels with `{PREFIX}gs`\n ")
     @commands.has_permissions(administrator=True)
     async def delete_settings(self, ctx, value):
         """
@@ -135,7 +136,7 @@ class Settings(commands.Cog):
             emby = utils.make_embed(color=discord.Color.orange(), name="No input", value=f"This function requires exactly one input:\n \
                                 `channel-ID` please give a valid channel ID as argument to remove that channel from \
                                 the list of watched channels.\n \
-                                You can get a list of all watched channels with `{config.PREFIX}gs`")
+                                You can get a list of all watched channels with `{PREFIX}gs`")
 
             await ctx.send(embed=emby)
 
@@ -159,7 +160,7 @@ class Settings(commands.Cog):
                 db.remove_line('"edit_channel"', column="setting")
 
             entry = ("edit_channel", "value_name", value_num,
-                     time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL)
+                     time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
             db.write_server_table(entry)
 
             emby = utils.make_embed(color=discord.Color.green(),
@@ -175,7 +176,7 @@ class Settings(commands.Cog):
 
     @commands.command(name="set", aliases=["sa"], help=f"Change various settings.\n\n\
         Usage: \
-        `{config.PREFIX}sa` [_archive_ | _log_] [_channel-id_]\n\n \
+        `{PREFIX}sa` [_archive_ | _log_] [_channel-id_]\n\n \
         Note that text-channels will only be archived when they contain at least one message, they'll be deleted otherwise. \n \
         This option is - also - admin only")
     @commands.has_permissions(administrator=True)
@@ -203,13 +204,13 @@ class Settings(commands.Cog):
             if len(db.search_table(value=setting, column="setting")) >= 1:  # there can only be one archive and log
 
                 text = f"Hey, you can only have one archive and log at once\n \
-                        If you wanna change those settings use `{config.PREFIX}ds [channel-id]` to remove a channel from your settings"
+                        If you wanna change those settings use `{PREFIX}ds [channel-id]` to remove a channel from your settings"
                 emby = utils.make_embed(color=discord.Color.orange(), name="Too many entries", value=text)
                 await ctx.send(embed=emby)
 
             # writing entry to db - the way things should go
             else:
-                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), config.VERSION_SQL)
+                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
                 db.write_server_table(entry)
 
                 emby = utils.make_embed(color=discord.Color.green(), name="Success", value="Setting saved")
