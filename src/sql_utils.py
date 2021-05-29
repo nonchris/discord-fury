@@ -2,8 +2,6 @@
 import sqlite3
 from sqlite3 import Error
 
-#own files
-import data.config as config
 
 """
 YES - This code IS vulnerable for SQL injections - I know it's is flawed...

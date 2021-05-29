@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.errors import Forbidden
 
 # own files
-import data.config as config
+from environment import PREFIX, OWNER_NAME, OWNER_ID, VERSION
 
 """This custom help command is a perfect replacement for the default one on any Discord Bot written in Discord.py!
 However, you must put "bot.remove_command('help')" in your bot, and the command must be in a cog for it to work.
@@ -47,21 +47,20 @@ class Help(commands.Cog):
     # @commands.bot_has_permissions(add_reactions=True,embed_links=True)
     async def help(self, ctx, *input):
         """Shows all modules of that bot"""
-        prefix = config.PREFIX
 
         # checks if cog parameter was given
         # if not: sending all modules and commands not associated with a cog
         if not input:
             # checks if owner is on this server - used to 'tag' owner
             try:
-                owner = ctx.guild.get_member(config.OWNER).mention
+                owner = ctx.guild.get_member(OWNER_ID).mention
 
             except AttributeError as e:
-                owner = config.OWNER_NAME
+                owner = OWNER_NAME
 
             # starting to build embed
             emb = discord.Embed(title='Commands and modules', color=discord.Color.blue(),
-                                description=f'Use `{prefix}h <module>` to gain more information about that module '
+                                description=f'Use `{PREFIX}h <module>` to gain more information about that module '
                                             f':smiley:\n')
 
             # iterating trough cogs, gathering descriptions
@@ -91,7 +90,7 @@ class Help(commands.Cog):
             emb.add_field(name="About", value=f"The Bots is developed by nonchris, based on discord.py.\n\
                                     This version of it is maintained by {owner}\n\
                                     Please visit https://github.com/nonchris/discord-fury to submit ideas or bugs.")
-            emb.set_footer(text=f"Bot is running {config.VERSION}")
+            emb.set_footer(text=f"Bot is running {VERSION}")
 
         # block called when one cog-name is given
         # trying to find matching cog and it's commands
@@ -110,7 +109,7 @@ class Help(commands.Cog):
                     for command in self.bot.get_cog(cog).get_commands():
                         # if cog is not hidden
                         if not command.hidden:
-                            emb.add_field(name=f"{config.PREFIX}{command.name}", value=command.help, inline=False)
+                            emb.add_field(name=f"{PREFIX}{command.name}", value=command.help, inline=False)
                     # found cog - breaking loop
                     break
 
