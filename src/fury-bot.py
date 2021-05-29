@@ -7,14 +7,12 @@ import discord
 from discord.ext import commands
 
 # own files
+import log_setup
+from environment import PREFIX, TOKEN
 import utils
 import data.config as config
 
-logging.basicConfig(
-    filename="data/events.log",
-    level=logging.INFO,
-    style="{",
-    format="[{asctime}] [{levelname}] [{name}] {message}")
+logger = logging.getLogger("my-bot")
 
 intents = discord.Intents.all()
 # intents.presences = True
@@ -80,7 +78,7 @@ async def on_command_error(ctx, error):
                                utils.make_embed(name="I'm sorry, I don't know this command", value=f'`{error}`',
                                                 color=discord.Color.orange()))
 
-    logging.warning(f"Command tried: {error}")
+    logger.warning(f"Command tried: {error}")
 
 
 @bot.event
@@ -96,7 +94,7 @@ async def on_error(function, *args, **kwargs):
 
     print("----------\n")
     print(tb_text)
-    logging.error(tb_text)
+    logger.error(tb_text)
 
     # sending message to member when channel creation process fails
     if function == "on_voice_state_update" and isinstance(exception, discord.errors.Forbidden):
