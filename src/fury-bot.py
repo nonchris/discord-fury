@@ -10,20 +10,15 @@ from discord.ext import commands
 import log_setup
 from environment import PREFIX, TOKEN
 import utils
-import data.config as config
 
 logger = logging.getLogger("my-bot")
 
 intents = discord.Intents.all()
 # intents.presences = True
 
-# loading token
-TOKEN = config.DISCORD_TOKEN_FURY  # reading in the token from config.py file
-
-server_channels = {}  # Server channel cache
 
 # setting prefix and defining bot
-bot = commands.Bot(command_prefix=config.PREFIX, intents=intents)
+bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 client = discord.Client()  # defining client
 
 # LOADING Extensions
@@ -60,7 +55,7 @@ async def on_ready():
         member_count += g.member_count
     print()
     await bot.change_presence(
-        activity=discord.Activity(type=discord.ActivityType.watching, name=f"{config.PREFIX}help"))
+        activity=discord.Activity(type=discord.ActivityType.watching, name=f"{PREFIX}help"))
 
 
 # error message if user has not right permissions
