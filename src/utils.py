@@ -1,5 +1,5 @@
 import re
-from typing import Tuple, Union, List
+from typing import Tuple, Union, List, Iterable
 
 import discord
 from discord.errors import Forbidden
@@ -76,8 +76,21 @@ def get_rid(ctx, role_input: Union[list, Tuple]) -> Tuple[List[int], int]:
 
 # gets you a channel from an ID in a text
 # like get_rid but less advanced (no search for names)
-def get_chan(guild, channel_input: str):
-    channel_id = re.search(r"\d{18}", channel_input)
+def get_chan(guild, channel_input: Union[Iterable, str]):
+    """
+    gets a channel from an ID in a text\n
+    :param guild: the channel is located on - if it exists
+    :param channel_input: string or iterable containing strings to be searched
+
+    :return: channel if it exists else None
+    """
+    if type(channel_input) is not str:
+        text_to_search = " ".join(channel_input)
+
+    else:
+        text_to_search = channel_input
+
+    channel_id = re.search(r"\d{18}", text_to_search)
     channel = None
     if channel_id is not None:
         channel_id = channel_id.group(0)
