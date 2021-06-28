@@ -77,6 +77,27 @@ def get_setting(guild_id: int, setting: str, value: str,
     return entry[0] if entry else None
 
 
+def get_setting_by_value(guild_id: int, value: Union[str, int], session=db.open_session()) -> Union[db.Settings, None]:
+    """
+    Used to extract a setting that has a channel id as value and an unknown setting-name
+
+    :param guild_id: guild  to search on
+    :param value: settings value to search for
+    :param session: will be created if none is passed in
+
+    :return: database entry if exists with those specific parameters, else None
+    """
+
+    statement = select(db.Settings).where(
+        and_(
+            db.Settings.guild_id == guild_id,
+            db.Settings.value == str(value)
+        )
+    )
+    entry = session.execute(statement).first()
+    return entry[0] if entry else None
+
+
 def add_setting(guild_id: int, setting: str, value: Union[str, int],
                 active=True, set_by="", set_date=datetime.now()):
     """
