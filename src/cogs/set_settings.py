@@ -164,41 +164,52 @@ class Settings(commands.Cog):
         await ctx.send(embed=emby)
 
     @commands.command(name="delete-setting", aliases=["ds"],
-                      help=f"Remove a channel from the list of watched 'create-voice' channels. \n\
-                        This command will only untrack the channel, it will _not_ delete anything on your server.\n\n\
-                        Usage: `{PREFIX}ds` [_channel-id_]\n\n\
-                        Get a list of all watched channels with `{PREFIX}gs`\n ")
+                      help=f"Remove a setting for your guild.\n\n"
+                           f"Usable to delete:\n"
+                           f"- channels from the list of 'watched' channels\n"
+                           f"- the archive category\n"
+                           f"- the log channel\n"
+                           "This command will only clear the setting from the bots database!\n"
+                           f"It will _not_ delete anything on your server.\n\n"
+                           f"Usage: `{PREFIX}ds` [_channel-id_]\n\n"
+                           f"Get a list of all watched channels with `{PREFIX}gs`\n "
+                           f"Aliases: `ds`")
     @commands.has_permissions(administrator=True)
-    async def delete_settings(self, ctx, value):
+    async def delete_settings(self, ctx: commands.Context, value: str):
         """
-        remove set channels
+        remove tracked channel from database
+
+        :param ctx: command context
+        :param value: id of the channel to be deleted
         """
-        if value:
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-            try:
-                int(value)  # fails when string is given
-                if len(value) == 18:
-                    # all checks passed - removing that entry
-                    db.remove_line(int(value), column="value_id")
-                    channel = ctx.guild.get_channel(int(value))
-                    await ctx.send(embed=utils.make_embed(color=discord.Color.green(), name="Deleted",
-                                                          value=f"Removed `{channel}` from settings"))
-                else:
-                    raise  # enter except
-
-            except:
-                emby = utils.make_embed(color=discord.Color.orange(), name="No valid channel ID", value="It seems like you din't \
-                                    give me a valid channel ID to work with")
-                await ctx.send(embed=emby)
-            # db.remove_line(value, column="value")
-
-        else:
-            emby = utils.make_embed(color=discord.Color.orange(), name="No input", value=f"This function requires exactly one input:\n \
-                                `channel-ID` please give a valid channel ID as argument to remove that channel from \
-                                the list of watched channels.\n \
-                                You can get a list of all watched channels with `{PREFIX}gs`")
+        if not value:
+            emby = utils.make_embed(
+                color=utils.orange,
+                name="No input",
+                value=f"This function requires exactly one input:\n"
+                      "`channel-id` please give a valid channel ID as argument to remove that channel from"
+                      "the list of watched channels.\n"
+                      f"You can get a list of all watched channels with `{PREFIX}gs`")
 
             await ctx.send(embed=emby)
+            return
+
+        channel_id = utils.extract_id_from_message(value)
+        if not channel_id:
+
+            emby = utils.make_embed(color=utils.orange,
+                                    name="No valid channel ID",
+                                    value="It seems like you didn't give me a valid channel ID to work with")
+            await ctx.send(embed=emby)
+            return
+
+        # all checks passed - removing that entry
+        settings_db.del_setting_by_value(ctx.guild.id, channel_id)
+
+        channel = ctx.guild.get_channel(channel_id)
+        await ctx.send(embed=utils.make_embed(color=utils.green, name="Deleted",
+                                              value=f"Removed "
+                                                    f"`{channel.name if channel else channel_id}` from settings"))
 
     # command to set-edit-vc permissions
     @commands.command(name='allow-edit', aliases=['al'],
