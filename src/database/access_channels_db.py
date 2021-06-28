@@ -19,6 +19,29 @@ def get_voice_channel_by_id(channel_id: int, session=db.open_session()):
     return entry[0] if entry else None
 
 
+def get_channels_by_type(guild_id: int, internal_type: str,
+                         session=db.open_session()) -> Union[List[db.CreatedChannels], None]:
+    """
+    Get all channels of an internal type by it's name
+
+    :param guild_id: guild to search on
+    :param internal_type: type of channels to search - e.g. 'public_channel'
+    :param session: optional if an entry shall be updated
+
+    :return: list of all channels of that 'class'
+    """
+
+    statement = select(db.CreatedChannels).where(
+        and_(
+            db.CreatedChannels.guild_id == guild_id,
+            db.CreatedChannels.internal_type == internal_type
+        )
+    )
+
+    entries = session.execute(statement).all()
+    return [entry[0] for entry in entries] if entries else None
+
+
 def add_channel(voice_channel_id: int, text_channel_id: str, guild_id: int, internal_type: str,
                 category=None, set_by='unknown', set_date=datetime.now()):
     """
