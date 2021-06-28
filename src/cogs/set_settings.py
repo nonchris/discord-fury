@@ -256,54 +256,92 @@ class Settings(commands.Cog):
                                 footer="Note that this setting has no affect on private channels")
         await ctx.send(embed=emby)
 
-    @commands.command(name="set", aliases=["sa"], help=f"Change various settings.\n\n\
-        Usage: \
-        `{PREFIX}sa` [_archive_ | _log_] [_channel-id_]\n\n \
-        Note that text-channels will only be archived when they contain at least one message, they'll be deleted otherwise. \n \
-        This option is - also - admin only")
+    @commands.command(
+        name="set", aliases=["sa", "sl", "archive", "log"],
+        help=f"Change settings for:\n\n"
+             f"__log:__\n"
+             f"Channel for log messages\n"
+             f"__archive:__\n"
+             f"Category linked text channels shall be moved to after linked voice-channel was deleted.\n\n"
+             "Usage\n:"
+             f"`{PREFIX}set` [_archive_ | _log_] [_channel-id_]\n\n"
+             "Note that text-channels will only be archived when they contain at least one message, "
+             "they'll be deleted otherwise.\n\n"
+             "Your setting will be updated if you already set a log / archive.\n\n"
+             f"Aliases: `archive`, `log`, `sa`, `sl`\n\n"
+             "This option is admin only")
     @commands.has_permissions(administrator=True)
-    async def set_archive(self, ctx, setting: str, value: str):
-        # possible settings switch -returns same value but nothing if key isn't valid
+    async def set_archive(self, ctx: commands.Context, setting: str, value: str):
+
+        # async def set_archive(self, ctx: commands.Context, setting: str, value: str):
+        if not setting:
+            msg = ("Please ensure that you've entered a valid setting \
+                                and channel-id or role-id for that setting.")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+            await ctx.send(embed=emby)
+
+            return
+
+        if not value:
+            msg = ("Please ensure that you've entered a valid setting \
+                                            and channel-id or role-id for that setting.")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+            await ctx.send(embed=emby)
+
+            return
+
+        # possible settings switch - returns same value but nothing if key isn't valid
         settings = {
-            "archive": utils.get_chan(ctx.guild, value),
-            "log": utils.get_chan(ctx.guild, value)
+            "archive": "archive_category",
+            "achive": "archive_category",
+            "arch": "archive_category",
+            "log": "log_channel"
         }
+
+        set_channel = utils.get_chan(ctx.guild, value)
+
         # trying to get a corresponding channel / id
-        value = settings.get(setting)
+        setting_type = settings[setting]
+
         # if value is "None" this means that there is no such setting or no such value for it
         # checking if keyword matches the entered channel type
         # -> ensures that the process of getting a correct setting has worked
 
+        text = ""
+        if type(set_channel) == discord.TextChannel and setting_type == "log_channel":
+            text = "log channel"
+
+        elif type(set_channel) == discord.CategoryChannel and setting_type == "archive_category":
+            text = "archive category"
+
         # set channels
-        if value is not None and value.type == discord.ChannelType.text and setting == "log" \
-                or value.type == discord.ChannelType.category and setting == "archive":
+        if text:
 
-            # connecting to db - creating a new one if there is none yet
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
+            # check if not none
+            session = db_models.open_session()
+            entry = settings_db.get_first_setting_for(ctx.guild.id, setting_type, session=session)
 
-            # Settings won't be stored if max watched channels are reached
-            # -> searching for amount of matching entries
-            if len(db.search_table(value=setting, column="setting")) >= 1:  # there can only be one archive and log
+            if entry:
+                # TODO: SEND REPLY
+                entry.value = setting_type
+                session.add(entry)
+                session.commit()
 
-                text = f"Hey, you can only have one archive and log at once\n \
-                        If you wanna change those settings use `{PREFIX}ds [channel-id]` to remove a channel from your settings"
-                emby = utils.make_embed(color=discord.Color.orange(), name="Too many entries", value=text)
-                await ctx.send(embed=emby)
+                await ctx.send(embed=utils.make_embed(name=f"Updated setting: {text}",
+                                                      value=f"Set to {set_channel.name}",
+                                                      color=utils.green))
 
-            # writing entry to db - the way things should go
-            else:
-                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
-                db.write_server_table(entry)
+                return
 
-                emby = utils.make_embed(color=discord.Color.green(), name="Success", value="Setting saved")
-                await ctx.send(embed=emby)
-
-        # when false inputs were given
-        else:
-            value = ("Please ensure that you've entered a valid setting \
-                    and channel-id or role-id for that setting.")
-            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=value)
-            await ctx.send(embed=emby)
+            settings_db.add_setting(
+                guild_id=ctx.guild.id,
+                setting=setting_type,
+                value=set_channel.id,
+                set_by=f"{ctx.author.id}"
+            )
+            await ctx.send(embed=utils.make_embed(name=f"Added setting: {text}",
+                                                  value=f"Set to {set_channel.name}",
+                                                  color=utils.green))
 
 
 def setup(bot):
