@@ -212,38 +212,49 @@ class Settings(commands.Cog):
                                                     f"`{channel.name if channel else channel_id}` from settings"))
 
     # command to set-edit-vc permissions
-    @commands.command(name='allow-edit', aliases=['al'],
-                      help=f'Change whether created public VC names can be edited by the channel creator.\n\
-                Arguments: [_yes_ | _no_]\n\
-                Default is _no_')
+    @commands.command(name='allow-edit', aliases=['al', 'ae'],
+                      help=f'Change whether the name of created public channels can be edited by the channel creator.\n'
+                           'Arguments: [_yes_ | _no_]\n'
+                           'Default is _no_\n'
+                           f"Aliases: `al`, `as`\n\n"
+                           f"This command is admin only.")
     @commands.has_permissions(administrator=True)
     async def edit_channel(self, ctx, value: str):
         settings = {'yes': 1,
                     'no': 0}
 
-        value_num = settings.get(value.lower())
-        if value_num != None:
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-
-            # if setting is already there old value needs to be deleted
-            if len(db.search_table(value="edit_channel",
-                                   column="setting")) == 1:  # there can only be one archive and log
-                db.remove_line('"edit_channel"', column="setting")
-
-            entry = ("edit_channel", "value_name", value_num,
-                     time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
-            db.write_server_table(entry)
-
-            emby = utils.make_embed(color=discord.Color.green(),
-                                    name="Success",
-                                    value=f"Channel Creator can edit channel-name: {value}")
-            await ctx.send(embed=emby)
-
-        else:
+        yes_or_no = settings[value.lower()]
+        if not yes_or_no:
             emby = utils.make_embed(color=discord.Color.orange(),
                                     name="Missing argument",
                                     value=f"Please enter `yes` or `no` as argument.")
             await ctx.send(embed=emby)
+            return
+
+        session = db_models.open_session()
+        entry = settings_db.get_first_setting_for(ctx.guild.id, "allow_public_rename", session=session)
+
+        # edit entry if exists
+        if entry:
+            entry.value = str(yes_or_no)
+            entry.is_active = True  # set to true because it should be active if changed
+            session.add(entry)
+            session.commit()
+
+        else:
+            settings_db.add_setting(
+                guild_id=ctx.guild.id,
+                setting="allow_public_rename",
+                value=str(yes_or_no),
+                set_by=str(ctx.author.id)
+            )
+
+        emby = utils.make_embed(color=utils.green,
+                                name="Success",
+                                value=f'The channel creator {"can" if yes_or_no else "can _not_"} '
+                                      f'edit the name of a created public channel\n',
+                                footer="Note that this setting has no affect on private channels")
+        await ctx.send(embed=emby)
 
     @commands.command(name="set", aliases=["sa"], help=f"Change various settings.\n\n\
         Usage: \
