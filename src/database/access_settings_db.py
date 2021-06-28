@@ -96,20 +96,45 @@ def add_setting(guild_id: int, setting: str, value: str,
     session.commit()
 
 
-def del_setting(guild_id: int, setting: str, value: str, session=db.open_session()):
+def del_setting(guild_id: int, setting: str, value: Union[str, int]):
     """
     Delete an entry from the settings table
 
     :param guild_id: id the setting is in
     :param value: value of the setting - probably name of a word-list
     :param setting: setting type to delete
-    :param session: session to search with, helpful if object shall be edited, since the same session is needed for this
     """
 
+    if type(value) is int:
+        value = str(int)
+
+    session = db.open_session()
     statement = delete(db.Settings).where(
         and_(
             db.Settings.guild_id == guild_id,
             db.Settings.setting == setting,
+            db.Settings.value == value
+        )
+    )
+    session.execute(statement)
+    session.commit()
+
+
+def del_setting_by_value(guild_id: int, value: Union[str, int]):
+    """
+    Delete an entry from the settings table
+
+    :param guild_id: id the setting is in
+    :param value: value of the setting - probably name of a word-list
+    """
+
+    if type(value) is int:
+        value = str(int)
+
+    session = db.open_session()
+    statement = delete(db.Settings).where(
+        and_(
+            db.Settings.guild_id == guild_id,
             db.Settings.value == value
         )
     )
