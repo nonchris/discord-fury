@@ -14,7 +14,8 @@ import database.db_models as db
 logger = logging.getLogger('my-bot')
 
 
-def get_settings_for(guild_id: int, setting: str, session=db.open_session()) -> Union[List[db.Settings], None]:
+def get_all_settings_for(guild_id: int, setting: str,
+                         session=db.open_session()) -> Union[List[db.Settings], None]:
     """
     Searches db for setting in a guild that matches the setting name
 
