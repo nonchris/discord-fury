@@ -64,9 +64,9 @@ class CreatedChannels(Base):
     set_date = Column(DateTime)          # date the value was changed the last time
 
     def __repr__(self):
-        return f"CreatedChannel: channel_type='{self.internal_type}' guild='{self.guild_id}', " \
-               f"voice_channel={self.voice_channel_id}, text_channel='{self.text_channel_id}, category='{self.category}' " \
-               f"set_by='{self.set_by}', set_date={self.set_date}"
+        return f"CreatedChannel: internal_type='{self.internal_type}' guild_id='{self.guild_id}', " \
+               f"voice_channel_id={self.voice_channel_id}, text_channel_id='{self.text_channel_id}," \
+               f"category='{self.category}', set_by='{self.set_by}', set_date={self.set_date}"
 
 
 @event.listens_for(Base.metadata, 'after_create')
