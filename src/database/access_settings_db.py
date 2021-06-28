@@ -77,8 +77,8 @@ def get_setting(guild_id: int, setting: str, value: str,
     return entry[0] if entry else None
 
 
-def add_setting(guild_id: int, setting: str, value: str,
-                active=True, set_by="", set_date=datetime.now(), session=db.open_session()):
+def add_setting(guild_id: int, setting: str, value: Union[str, int],
+                active=True, set_by="", set_date=datetime.now()):
     """
     Add an entry to the settings database
 
@@ -88,10 +88,14 @@ def add_setting(guild_id: int, setting: str, value: str,
     :param set_date: date the setting was configured
     :param setting: setting type to add
     :param active: if setting shall be active, not used at the moment
-    :param session: session to search with, helpful if object shall be edited, since the same session is needed for this
     """
+
+    if type(value) is int:
+        value = str(value)
+
+    session = db.open_session()
     entry = db.Settings(guild_id=guild_id, setting=setting, value=value,
-                        active=active, set_by=set_by, set_date=set_date)
+                        is_active=active, set_by=set_by, set_date=set_date)
     session.add(entry)
     session.commit()
 
