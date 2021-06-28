@@ -52,20 +52,20 @@ class Settings(Base):
                f"value='{self.value}', set_by='{self.set_by}', set_date='{self.set_date}', is_active='{self.is_active}'>"
 
 
-class LinkedChannels(Base):
-    __tablename__ = 'LINKED_CHANNELS'
+class CreatedChannels(Base):
+    __tablename__ = 'CREATED_CHANNELS'
 
-    voice_channel = Column(Integer, primary_key=True)  # id of voice channel is primary key
-    channel_type = Column(String)       # type of channel public, private, persistent etc
-    text_channel = Column(Integer)      # id of the linked text channel
-    guild = Column(Integer)             # guild the channels are on
-    category = Column(Integer)          # category they're in - not sure if needed but neat to have
-    set_by = Column(String)             # system the entry was set by bot/ user
-    set_date = Column(DateTime)         # date the value was changed the last time
+    voice_channel_id = Column(Integer, primary_key=True)  # id of voice channel is primary key
+    internal_type = Column(String)       # type of channel public, private, persistent etc
+    text_channel_id = Column(Integer)    # id of the linked text channel
+    guild_id = Column(Integer)           # guild the channels are on
+    category = Column(Integer)           # category they're in - not sure if needed but neat to have
+    set_by = Column(String)              # system the entry was set by bot/ user
+    set_date = Column(DateTime)          # date the value was changed the last time
 
     def __repr__(self):
-        return f"LinkedChannel: channel_type='{self.channel_type}' guild='{self.guild}', " \
-               f"voice_channel={self.voice_channel}, text_channel='{self.text_channel}, category='{self.category}' " \
+        return f"CreatedChannel: channel_type='{self.internal_type}' guild='{self.guild_id}', " \
+               f"voice_channel={self.voice_channel_id}, text_channel='{self.text_channel_id}, category='{self.category}' " \
                f"set_by='{self.set_by}', set_date={self.set_date}"
 
 
