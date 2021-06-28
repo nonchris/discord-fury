@@ -124,35 +124,43 @@ class Settings(commands.Cog):
             color=utils.green, name="Success", value=f"Set {channel.name} as {setting.replace('_', ' ')}")
         await ctx.send(embed=emby)
 
-    @commands.command(name="get-settings", aliases=["gs"], help=f"\
-                                Get a list of all watched 'create-voice' channels - short: `{PREFIX}gs`")
+    @commands.command(name="settings", aliases=["gs", "get-settings"],
+                      help=f"Get a list of all 'watched' channels as well as all other settings\n\n"
+                           f"Aliases: `gs`, `get-settings` ")
     @commands.has_permissions(kick_members=True)
     async def get_settings(self, ctx):
         """
-        prints set channels
+        prints setting on guild
         """
-        db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-        results = db.read_server_table()  # gets a list ob entry objects
+
+        tracked_channels = [*settings_db.get_all_settings_for(ctx.guild.id, "public_channel"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "private_channel"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "archive_category"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "log_channel")]
 
         pub = "__Public Channels:__\n"
         priv = "__Private Channels:___\n"
-        log = "__Log Channel__\n"
-        archive = "__Archive Category__\n"
-        for i in range(len(results)):  # building strings
-            if results[i].setting == "pub-channel" or results[i].setting == "pub":
-                pub += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+        log = "__Log Channel:__\n"
+        archive = "__Archive Category:__\n"
+        for i, elm in enumerate(tracked_channels):  # building strings
+            if elm.setting == "public_channel":
+                pub += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "priv-channel" or results[i].setting == "priv":
-                priv += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "private_channel":
+                priv += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "log":
-                log += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "log_channel":
+                log += f"`{ctx.guild.get_channel(int(elm.value)).mention}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "archive":
-                archive += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "archive_category":
+                archive += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-        emby = utils.make_embed(color=discord.Color.green(), name="Server Settings",
-                                value=f"‌\n{pub}\n {priv}\n{archive}\n{log}")
+        emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
+                                value=f"‌\n"
+                                      f"{pub}\n"
+                                      f"{priv}\n"
+                                      f"{archive}\n"
+                                      f"{log}")
         await ctx.send(embed=emby)
 
     @commands.command(name="delete-setting", aliases=["ds"],
