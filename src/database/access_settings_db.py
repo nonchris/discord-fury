@@ -36,6 +36,23 @@ def get_all_settings_for(guild_id: int, setting: str,
     return [entry[0] for entry in entries] if entries else None
 
 
+def get_first_setting_for(guild_id: int, setting: str,
+                          session=db.open_session()) -> Union[db.Settings, None]:
+    """
+    Wrapper around get_all_settings_for() that extracts the first entry from returned list
+
+    :param guild_id: id of the guild to search for
+    :param setting: name of the setting to search for
+    :param session: session to search with, helpful if object shall be edited, since the same session is needed for this
+
+    :return: first setting to match the query
+    """
+
+    entries = get_all_settings_for(guild_id, setting, session)
+
+    return entries[0] if entries else None
+
+
 def get_setting(guild_id: int, setting: str, value: str,
                 session=db.open_session()) -> Union[db.Settings, None]:
     """
