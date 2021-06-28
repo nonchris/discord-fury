@@ -36,20 +36,20 @@ class Settings(Base):
     __tablename__ = 'SETTINGS'
 
     # setting names:
-    # mod-role, tracked channel
+    # mod_role, public_channel, private_channel, archive_category, log_channel, allow_public_rename
 
     id = Column(Integer, primary_key=True)
     guild_id = Column(Integer)      # ID of guild setting is applied to
-    channel_id = Column(Integer)    # to make settings per channel possible
+    applied_to_channel_id = Column(Integer)    # to make settings per channel possible
     setting = Column(String)        # type of setting - example: mod-role
     value = Column(String)          # setting value - example: id of a moderator role
-    active = Column(Boolean)  # future: maybe don't delete unused settings and rather deactivate them -> better logging?
+    is_active = Column(Boolean)  # future: maybe don't delete unused settings and rather deactivate them -> better logging?
     set_by = Column(String)         # user id or name of the user who set entry
     set_date = Column(DateTime)     # date the setting was altered the last time
 
     def __repr__(self):
-        return f"<Setting: guild='{self.guild_id}', channel_id='{self.channel_id}' setting='{self.setting}'," \
-               f"value='{self.value}', set_by='{self.set_by}', set_date='{self.set_date}', active='{self.active}'>"
+        return f"<Setting: guild='{self.guild_id}', channel_id='{self.applied_to_channel_id}' setting='{self.setting}'," \
+               f"value='{self.value}', set_by='{self.set_by}', set_date='{self.set_date}', is_active='{self.is_active}'>"
 
 
 class LinkedChannels(Base):
