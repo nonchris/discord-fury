@@ -55,6 +55,8 @@ class Settings(Base):
 class CreatedChannels(Base):
     __tablename__ = 'CREATED_CHANNELS'
 
+    # types: public_channel, private_channel, breakout_room
+
     voice_channel_id = Column(Integer, primary_key=True)  # id of voice channel is primary key
     internal_type = Column(String)       # type of channel public, private, persistent etc
     text_channel_id = Column(Integer)    # id of the linked text channel
