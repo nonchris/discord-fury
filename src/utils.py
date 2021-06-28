@@ -100,11 +100,11 @@ def get_chan(guild, channel_input: Union[Iterable, str]):
 
 # creating and returning an embed with keyword arguments
 # please note that name and value can't be empty - good news: they aren't ;)
-def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", text=None):
+def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", footer=None):
     emby = discord.Embed(title=title, color=color)
     emby.add_field(name=name, value=value)
-    if text:
-        emby.set_footer(text=text)
+    if footer:
+        emby.set_footer(text=footer)
 
     return emby
 
