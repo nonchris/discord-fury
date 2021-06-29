@@ -189,7 +189,7 @@ def is_track_limit_reached(guild_id: int, *channel_types: str) -> bool:
         # get list of all tracked channels that match the given type
         tracked_channels = get_all_settings_for(guild_id, channel_type)
 
-        if len(tracked_channels) >= CHANNEL_TRACK_LIMIT:
+        if tracked_channels and len(tracked_channels) >= CHANNEL_TRACK_LIMIT:
             return True
 
     return False
