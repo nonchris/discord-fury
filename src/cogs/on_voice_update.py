@@ -12,7 +12,7 @@ import database.access_channels_db as channels_db
 import utils as utl
 
 
-async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
+async def make_channel(voice_state: discord.VoiceState, member: discord.Member, bot_member: discord.Member,
                        voice_overwrites: discord.PermissionOverwrite,
                        vc_name="voice-channel", tc_name="text-channel", channel_type="public") -> Tuple[
                        discord.VoiceChannel, discord.TextChannel]:
@@ -22,6 +22,7 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
 
     :param voice_state: To detect which VC the member is in
     :param member: To access guild and give member TC access permissions
+    :param bot_member: Bot as member to enable access on all created channels
     :param voice_overwrites: To give member extra permissions in the VC and TC
     :param vc_name: Voice Channel name
     :param tc_name: Text Channel name
@@ -37,6 +38,7 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member,
     t_channel: discord.TextChannel = await member.guild.create_text_channel(
         tc_name, category=voice_state.channel.category,
         overwrites={member: discord.PermissionOverwrite(view_channel=True),
+                    bot_member: discord.PermissionOverwrite(view_channel=True),
                     member.guild.default_role: discord.PermissionOverwrite(view_channel=False)})
 
     # add channels to database
@@ -69,11 +71,13 @@ channel_names = {"public_channel": [["╠{0}'s discussion", "{0}'s discussion"],
 
 async def create_new_channels(member: discord.Member,
                               after: discord.VoiceState,
-                              channel_type: str) -> Tuple[discord.VoiceChannel, discord.TextChannel]:
+                              channel_type: str,
+                              bot_member: discord.Member) -> Tuple[discord.VoiceChannel, discord.TextChannel]:
     """
     :param member: member that issued the creation
     :param after: VoiceState that represents the state after the update
     :param channel_type: string that describes the type 'public_channel', 'private_channel'
+    :param bot_member: needed to add bot itself to possibly hidden channel
 
     :returns: references to created voice and text channels
     """
@@ -86,6 +90,8 @@ async def create_new_channels(member: discord.Member,
 
     # default overwrites for new channel
     voice_channel_permissions = after.channel.category.overwrites
+
+    voice_channel_permissions[bot_member] = discord.PermissionOverwrite(view_channel=True)
 
     # overwriting permissions if channel shall be private
     if channel_type == 'private_channel':
@@ -104,7 +110,7 @@ async def create_new_channels(member: discord.Member,
                                                                         manage_channels=True)
 
     # issue creation of channels
-    voice_channel, text_channel = await make_channel(after, member, voice_channel_permissions,
+    voice_channel, text_channel = await make_channel(after, member, bot_member, voice_channel_permissions,
                                                      vc_name=new_channel_name[0].format(member.display_name),
                                                      tc_name=new_channel_name[1].format(member.display_name),
                                                      channel_type=channel_type)
@@ -242,7 +248,8 @@ class VCCreator(commands.Cog):
 
             if create_channel:
                 print(f"{create_channel.setting=}")
-                voice_channel, text_channel = await create_new_channels(member, after, create_channel.setting)
+                voice_channel, text_channel = await create_new_channels(member, after,
+                                                                        create_channel.setting, bot_member_on_guild)
 
                 # write to log channel if configured
                 if log_entry:

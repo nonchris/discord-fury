@@ -64,6 +64,9 @@ class Breakout(commands.Cog):
         # channel invoker is based in
         base_vc: discord.VoiceChannel = ctx.author.voice.channel
 
+        # bot itself, needed to garant access to created channels
+        bot_member: discord.Member = ctx.guild.get_member(self.bot.user.id)
+
         # making a copy of members in channel - used to move members
         members: List[discord.Member] = base_vc.members.copy()
         members.remove(ctx.author)  # invoker should not be moved to break-out-room
@@ -78,7 +81,7 @@ class Breakout(commands.Cog):
             Moving members
             """
             if i % split == 0:
-                mv_channel, _ = await make_channel(ctx.author.voice, members[i], overwrites,
+                mv_channel, _ = await make_channel(ctx.author.voice, members[i], bot_member, overwrites,
                                                    vc_name=f"Breakout Room {i // split + 1}",
                                                    tc_name=f"Breakout Room {i // split + 1}",
                                                    channel_type="breakout_room")
