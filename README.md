@@ -15,7 +15,7 @@
 | Command | Description | Alternative |  
 | ------ |   ------ | ------- | 
 | `f!set [log channel / archive category]` | Add setting for archive category and log channel | `archive`, `log` |
-| `f!delete-settings [channel id]` | Removes a channel from the tracked list | `f!ds [id]` |
+| `f!delete-settings [channel id]` | Removes a channel from the tracked list | `ds` |
 | `f!settings` | Get a list of all configured settings | `gs`, `get-settings` |
 | `f!allow-edit [yes / no]` | Allow the creator of a public channel to edit the name, default is no | `al`, `ae` |
 | `f!ping` | Check if the bot is available | |
