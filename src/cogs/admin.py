@@ -23,29 +23,6 @@ class Admin(commands.Cog):
     # AIR
     # ORION
 
-    @commands.command(name="fetch-reactions", hidden=True)
-    @commands.has_permissions(administrator=True)
-    async def fetch_message(self, ctx):
-        """
-        A butch, that fixes a problem with the reaction bot
-        It's disgusting and hardcoded but I'm gonna leave it here, cause I need it to fix an other bot
-        """
-        if ctx.guild.id == 760421261649248296:
-            channel = ctx.guild.get_channel(760455084353650698)
-            message = await channel.fetch_message(760455425610350602)
-            users = await message.reactions[0].users().flatten()
-            role = ctx.guild.get_role(760434164146634752)
-            i = 0
-            for user in users:
-                member = ctx.guild.get_member(user.id)
-                if member == None:
-                    pass
-                if len(member.roles) == 1:
-                    print(member)
-                    await member.add_roles(role, reason="Reaction bot didn't work")
-                    i += 1
-            await ctx.send(content=f"Done, added {i} new members to {role.name}")
-
     # ROLE ID
     @commands.command(name="role-id", aliases=["roleid", "rid", "r-id"],
                       help="Mention a role or just give its name to get the roles ID\n Aliases: `roleid`, `rid`, `r-id`")
