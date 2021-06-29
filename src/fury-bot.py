@@ -30,6 +30,7 @@ initial_extensions = [
     'cogs.misc',
     'cogs.on_message',
     'cogs.set_settings',
+    'cogs.quick_setup',
     'cogs.on_voice_update',
     'cogs.breakout_rooms'
 ]
