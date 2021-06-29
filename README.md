@@ -50,7 +50,7 @@ Use `f!help settings` to learn more about the way configure the bot.
 
 ### Other useful commands
 `Misc` contains some useful commands like get a ping or list all members with a certain role.
-`Admin` contains a role backup command, and a few other admin commands.
+`Admin` contains a command for getting a role id by entering the roles name
 Use `f!help` to learn more about all modules and commands.
 
 ### Setup
