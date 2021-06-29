@@ -106,17 +106,10 @@ def get_chan(guild, channel_input: Union[Iterable, str]):
 
     :return: channel if it exists else None
     """
-    if type(channel_input) is not str:
-        text_to_search = " ".join(channel_input)
-
-    else:
-        text_to_search = channel_input
-
-    channel_id = re.search(r"\d{18}", text_to_search)
+    channel_id = extract_id_from_message(channel_input)
     channel = None
     if channel_id is not None:
-        channel_id = channel_id.group(0)
-        channel = guild.get_channel(int(channel_id))
+        channel = guild.get_channel(channel_id)
     return channel  # returning channel object
 
 
