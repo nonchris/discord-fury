@@ -10,6 +10,7 @@ from typing import Union, List
 from sqlalchemy import select, and_, delete
 
 import database.db_models as db
+from environment import CHANNEL_TRACK_LIMIT
 
 logger = logging.getLogger('my-bot')
 
@@ -165,3 +166,30 @@ def del_setting_by_value(guild_id: int, value: Union[str, int]):
     )
     session.execute(statement)
     session.commit()
+
+
+def is_track_limit_reached(guild_id: int, *channel_types: str) -> bool:
+    """
+    Check if new channels of asked types can be created without reaching any tracking limit\n
+
+    All types are checked if no types are given
+
+    :param guild_id: guild id to check settings for
+    :param channel_types: strings of channel_types that the db shall be checked for e.g. private_channel
+
+    :return: True if limit is reached, False if not
+    """
+
+    # if no specific is given - check all known 'classes'
+    if not channel_types:
+        channel_types = ('public_channel', 'private_channel')
+
+    for channel_type in channel_types:
+
+        # get list of all tracked channels that match the given type
+        tracked_channels = get_all_settings_for(guild_id, channel_type)
+
+        if len(tracked_channels) >= CHANNEL_TRACK_LIMIT:
+            return True
+
+    return False
