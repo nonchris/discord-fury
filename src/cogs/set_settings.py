@@ -1,24 +1,13 @@
-# built in
-import os
-import time
 from typing import Union
 
-import sql_utils as sqltils
-
-# pip
 import discord
 from discord.ext import commands
 
-# own files
 from environment import PREFIX, CHANNEL_TRACK_LIMIT
 import database.db_models as db_models
 import database.access_settings_db as settings_db
 import database.access_channels_db as channels_db
 import utils as utils
-
-global db_file
-db_file = "data/fury1.db"  # variables will be gone with the next update 
-SQL_VERSION = 1
 
 
 class Settings(commands.Cog):
