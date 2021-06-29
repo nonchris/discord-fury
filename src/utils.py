@@ -35,6 +35,28 @@ async def send_embed(ctx, embed):
                 f"May you inform the server team about this issue? :slight_smile:", embed=embed)
 
 
+def extract_id_from_message(content: Union[Iterable, str]) -> Union[int, None]:
+    """
+    Scans string to extract user/guild/message id\n
+    Can extract IDs from mentions or plaintext
+
+    :param content: string or treatable with strings to search
+
+    :return: extracted id as integer or None
+    """
+
+    if type(content) is not str:
+        text_to_search = " ".join(content)
+
+    else:
+        text_to_search = content
+
+    # matching string that has 18 digits surrounded by non-digits or start/end of string
+    match = re.match(r'(\D+|^)(\d{18})(\D+|$)', text_to_search)
+
+    return int(match.group(2)) if match else None
+
+
 def get_rid(ctx, role_input: Union[list, Tuple]) -> Tuple[List[int], int]:
     """
     :param ctx: Command-Context from discord.py
