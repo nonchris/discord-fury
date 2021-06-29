@@ -29,13 +29,14 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="svc", aliases=["set-voice", "set-voice-channel"],
-                      help=f"Register a voice channel that members can join to get an own channel\n\n"
+    @commands.command(
+        name="add", aliases=["svc", "set-voice", "set-voice-channel"],
+        help=f"Register a voice channel that members can join to get an own channel\n\n"
         "__Usage:__\n"
-        f"`{PREFIX}svc` [_public_ | _private_] [_channel-id_]\n\n"
+        f"`{PREFIX}add` [_public_ | _private_] [_channel-id_]\n\n"
         "_public_ or _private_ is the option for the channel-type that is created when joining the tracked-channel.\n"
         "This option is - obviously - admin only\n\n"
-        f"Aliases: `{PREFIX}set-voice [channel type] [channel id]`")
+        f"Aliases: `{PREFIX}svc` `{PREFIX}set-voice [channel type] [channel id]`")
     @commands.has_permissions(administrator=True)
     async def set_voice(self, ctx: commands.Context, setting: str, value: str):
         """
