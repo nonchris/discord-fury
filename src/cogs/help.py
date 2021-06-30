@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.errors import Forbidden
 
 # own files
+import utils as ut
 from environment import PREFIX, OWNER_NAME, OWNER_ID, VERSION
 
 """This custom help command is a perfect replacement for the default one on any Discord Bot written in Discord.py!
@@ -59,7 +60,7 @@ class Help(commands.Cog):
                 owner = OWNER_NAME
 
             # starting to build embed
-            emb = discord.Embed(title='Commands and modules', color=discord.Color.blue(),
+            emb = discord.Embed(title='Commands and modules', color=ut.blue_light,
                                 description=f'Use `{PREFIX}h <module>` to gain more information about that module '
                                             f':smiley:\n')
 
@@ -103,7 +104,7 @@ class Help(commands.Cog):
 
                     # making title - getting description from doc-string below class
                     emb = discord.Embed(title=f'{cog} - Commands', description=self.bot.cogs[cog].__doc__,
-                                        color=discord.Color.green())
+                                        color=ut.green)
 
                     # getting commands from cog
                     for command in self.bot.get_cog(cog).get_commands():
@@ -118,13 +119,13 @@ class Help(commands.Cog):
             else:
                 emb = discord.Embed(title="What's that?!",
                                     description=f"I've never heard from a module called `{input[0]}` before :scream:",
-                                    color=discord.Color.orange())
+                                    color=ut.yellow)
 
         # too many cogs requested - only one at a time allowed
         elif len(input) > 1:
             emb = discord.Embed(title="That's too much.",
                                 description="Please request only one module at once :sweat_smile:",
-                                color=discord.Color.orange())
+                                color=ut.orange)
 
         else:
             emb = discord.Embed(title="It's a magical place.",
@@ -132,7 +133,7 @@ class Help(commands.Cog):
                                             "Would you please be so kind to report that issue to me on github?\n"
                                             "https://github.com/nonchris/discord-fury/issues\n"
                                             "Thank you! ~Chris",
-                                color=discord.Color.red())
+                                color=ut.red)
 
         # sending reply embed using our own function defined above
         await send_embed(ctx, emb)
