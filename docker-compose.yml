@@ -4,10 +4,11 @@ services:
   discord-fury:
     build: .
     volumes:
-      - "./data:/app/data:rw"
+      - "./data/app:/app/data:rw"
     environment:
       - UID=1000 
       - GID=1000
+      - db_url=db_user:db_pw@db/db_name
       - TOKEN=
       - PREFIX=
       - OWNER_ID=
@@ -16,3 +17,15 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
+
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    volumes:
+        - "./data/postgress:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_pw
+      POSTGRES_DB: db_name
+    stdin_open: true
+    tty: true
