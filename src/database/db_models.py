@@ -23,10 +23,15 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
 
+# responsible for postgress compatibility
+import psycopg2
+
 if not os.path.exists('data/'):
     os.mkdir('data/')
 
-engine = create_engine('sqlite:///data/main.db', echo=False)
+db_url = os.environ["db_url"]
+
+engine = create_engine(f'postgresql+psycopg2://{db_url}', echo=False)
 Base: declarative_base = declarative_base()
 
 logger = logging.getLogger('my-bot')
