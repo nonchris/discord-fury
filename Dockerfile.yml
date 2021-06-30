@@ -10,6 +10,12 @@
         discord:
           name: discord.py
           version: 1.5.1
+        psycopg2:
+          name: psycopg2-binary
+          version: 2.9.1
+        SQLAlchemy:
+          name: SQLAlchemy
+          version: 1.4.20
 
   tasks:
   - name: Upgrade all packages to the latest version
