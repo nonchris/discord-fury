@@ -16,5 +16,7 @@ WORKDIR /app
 
 COPY src/ /app/
 
-COPY ./entrypoint.sh /
-ENTRYPOINT ["sh", "/entrypoint.sh"]
+CMD groupadd python -g ${GID:-1000} || echo "Group already exists." && \
+    useradd -u ${UID:-1000} -g ${GID:-1000} python || echo "User already exists." && \
+    chown -R  python:python /app && \
+    su python -c 'python3 fury-bot.py'
