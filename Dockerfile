@@ -14,10 +14,7 @@ RUN apt update && \
 VOLUME /app/
 WORKDIR /app
 
-COPY src/* /app/
-
-VOLUME /app/cogs
-COPY src/cogs/ /app/cogs/
+COPY src/ /app/
 
 COPY ./entrypoint.sh /
 ENTRYPOINT ["sh", "/entrypoint.sh"]
