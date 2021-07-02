@@ -58,33 +58,34 @@ async def on_command_error(ctx, error):
     logger.warning(f"Command tried: {error}")
 
 
-@bot.event
-async def on_error(function, *args, **kwargs):
-    """
-    Overwriting error handler from discord.py
-    """
-    # exception type
-    exception = sys.exc_info()[1]
-    # traceback text
-    tb_text = f'Error in: {function}\n{exception}\nTraceback (most recent call last):\n' \
-              + "".join(traceback.format_tb(sys.exc_info()[2])) + f"{exception}"
-
-    print("----------\n")
-    print(tb_text)
-    logger.error(tb_text)
-
-    # sending message to member when channel creation process fails
-    if function == "on_voice_state_update" and isinstance(exception, discord.errors.Forbidden):
-        member = args[0]  # member is first arg that is passed in
-        # check if it's the error we expect
-        if tb_text.find("create_voice_channel") != -1:
-            await member.send(
-                embed=utils.make_embed(name=f"Something's wrong with my permissions",
-                                       value="I can't prepare (create & edit) a channel for you "
-                                             "or I can't move you.\n"
-                                             "Please check whether a channel was created and inform the server team "
-                                             "about that problem.\n I'm sorry! :confused:",
-                                       color=discord.Color.red()))
+# TODO recreate 'normal' print stack-trace... disable custom handling until then
+# @bot.event
+# async def on_error(function, *args, **kwargs):
+#     """
+#     Overwriting error handler from discord.py
+#     """
+#     # exception type
+#     exception = sys.exc_info()[1]
+#     # traceback text
+#     tb_text = f'Error in: {function}\n{exception}\nTraceback (most recent call last):\n' \
+#               + "".join(traceback.format_tb(sys.exc_info()[2])) + f"{exception}"
+#
+#     print("----------\n")
+#     print(tb_text)
+#     logger.error(tb_text)
+#
+#     # sending message to member when channel creation process fails
+#     if function == "on_voice_state_update" and isinstance(exception, discord.errors.Forbidden):
+#         member = args[0]  # member is first arg that is passed in
+#         # check if it's the error we expect
+#         if tb_text.find("create_voice_channel") != -1:
+#             await member.send(
+#                 embed=utils.make_embed(name=f"Something's wrong with my permissions",
+#                                        value="I can't prepare (create & edit) a channel for you "
+#                                              "or I can't move you.\n"
+#                                              "Please check whether a channel was created and inform the server team "
+#                                              "about that problem.\n I'm sorry! :confused:",
+#                                        color=discord.Color.red()))
 
 
 # Here we load our extensions(cogs) listed above in [initial_extensions]
