@@ -16,7 +16,9 @@ WORKDIR /app
 
 COPY src/ /app/
 
+ENV run=fury-bot.py
+
 CMD groupadd python -g ${GID:-1000} || echo "Group already exists." && \
     useradd -u ${UID:-1000} -g ${GID:-1000} python || echo "User already exists." && \
     chown -R  python:python /app && \
-    su python -c 'python3 fury-bot.py'
+    su python -c 'python3 $run'
