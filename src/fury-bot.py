@@ -21,25 +21,6 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 client = discord.Client()  # defining client
 
-# LOADING Extensions
-bot.remove_command('help')
-initial_extensions = [
-    'cogs.admin',
-    # 'cogs.helix',
-    'cogs.help',
-    'cogs.misc',
-    'cogs.on_message',
-    'cogs.set_settings',
-    'cogs.quick_setup',
-    'cogs.on_voice_update',
-    'cogs.breakout_rooms'
-]
-
-# Here we load our extensions(cogs) listed above in [initial_extensions].
-if __name__ == '__main__':
-    for extension in initial_extensions:
-        bot.load_extension(extension)
-
 
 # game = discord.Game('Waiting')
 # login message
@@ -106,7 +87,29 @@ async def on_error(function, *args, **kwargs):
                                        color=discord.Color.red()))
 
 
-bot.run(TOKEN)
+# Here we load our extensions(cogs) listed above in [initial_extensions]
+# and start the bot
+if __name__ == '__main__':
+    # LOADING Extensions
+    bot.remove_command('help')
+    initial_extensions = [
+        'cogs.admin',
+        # 'cogs.helix',
+        'cogs.help',
+        'cogs.misc',
+        'cogs.on_message',
+        'cogs.set_settings',
+        'cogs.quick_setup',
+        'cogs.on_voice_update',
+        'cogs.breakout_rooms'
+    ]
+
+    # load extensions - must happen before migration try
+    # modules will init the database, not the bot itself
+    for extension in initial_extensions:
+        bot.load_extension(extension)
+
+    bot.run(TOKEN)
 
 # PANTHEON
 # loaded via cogs
