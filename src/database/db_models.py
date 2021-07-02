@@ -18,7 +18,7 @@ from sqlalchemy import create_engine, Boolean, DateTime
 # base contains a metaclass that produces the right table
 from sqlalchemy.ext.declarative import declarative_base
 # setting up a class that represents our SQL Database
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, BigInteger
 # prints if a table was created - neat check for making sure nothing is overwritten
 from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
@@ -44,8 +44,8 @@ class Settings(Base):
     # mod_role, public_channel, private_channel, archive_category, log_channel, allow_public_rename
 
     id = Column(Integer, primary_key=True)
-    guild_id = Column(Integer)      # ID of guild setting is applied to
-    applied_to_channel_id = Column(Integer)    # to make settings per channel possible
+    guild_id = Column(BigInteger)      # ID of guild setting is applied to
+    applied_to_channel_id = Column(BigInteger)    # to make settings per channel possible
     setting = Column(String)        # type of setting - example: mod-role
     value = Column(String)          # setting value - example: id of a moderator role
     is_active = Column(Boolean)  # future: maybe don't delete unused settings and rather deactivate them -> better logging?
@@ -62,11 +62,12 @@ class CreatedChannels(Base):
 
     # types: public_channel, private_channel, breakout_room
 
-    voice_channel_id = Column(Integer, primary_key=True)  # id of voice channel is primary key
+    id = Column(Integer, primary_key=True)
+    voice_channel_id = Column(BigInteger)  # id of voice channel that was created
     internal_type = Column(String)       # type of channel public, private, persistent etc
-    text_channel_id = Column(Integer)    # id of the linked text channel
-    guild_id = Column(Integer)           # guild the channels are on
-    category = Column(Integer)           # category they're in - not sure if needed but neat to have
+    text_channel_id = Column(BigInteger)    # id of the linked text channel
+    guild_id = Column(BigInteger)           # guild the channels are on
+    category = Column(BigInteger)           # category they're in - not sure if needed but neat to have
     set_by = Column(String)              # system the entry was set by bot/ user
     set_date = Column(DateTime)          # date the value was changed the last time
 
