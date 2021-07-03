@@ -2,17 +2,34 @@
 version: "3"
 services:
   discord-fury:
-    build: .
+    image: nonchris/discord-fury:2.0
+    container_name: discord-fury
     volumes:
-      - "./data:/app/data:rw"
+      - "./data/app:/app/data:rw"
     environment:
       - UID=1000 
       - GID=1000
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=db_pw
+      - POSTGRES_DB=db_name
       - TOKEN=
       - PREFIX=
+      - VERSION=
       - OWNER_ID=
       - OWNER_NAME=
       - CHANNEL_TRACK_LIMIT=
     stdin_open: true
     tty: true
     restart: unless-stopped
+
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    volumes:
+        - "./data/postgress:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_pw
+      POSTGRES_DB: db_name
+    stdin_open: true
+    tty: true

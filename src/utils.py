@@ -1,9 +1,18 @@
 import re
-from typing import Tuple, Union, List
+from typing import Tuple, Union, List, Iterable
 
-# pip
 import discord
 from discord.errors import Forbidden
+
+from environment import PREFIX
+
+
+# color scheme for embeds as rbg
+blue_light = discord.Color.from_rgb(20, 255, 255)  # default color
+green = discord.Color.from_rgb(142, 250, 60)   # success green
+yellow = discord.Color.from_rgb(245, 218, 17)  # waring like 'hey, that's not cool'
+orange = discord.Color.from_rgb(245, 139, 17)  # waring - rather critical like 'no more votes left'
+red = discord.Color.from_rgb(255, 28, 25)      # error red
 
 
 async def send_embed(ctx, embed):
@@ -24,6 +33,28 @@ async def send_embed(ctx, embed):
             await ctx.author.send(
                 f"Hey, seems like I can't send any message in {ctx.channel.name} on {ctx.guild.name}\n"
                 f"May you inform the server team about this issue? :slight_smile:", embed=embed)
+
+
+def extract_id_from_message(content: Union[Iterable, str]) -> Union[int, None]:
+    """
+    Scans string to extract user/guild/message id\n
+    Can extract IDs from mentions or plaintext
+
+    :param content: string or treatable with strings to search
+
+    :return: extracted id as integer or None
+    """
+
+    if type(content) is not str:
+        text_to_search = " ".join(content)
+
+    else:
+        text_to_search = content
+
+    # matching string that has 18 digits surrounded by non-digits or start/end of string
+    match = re.match(r'(\D+|^)(\d{18})(\D+|$)', text_to_search)
+
+    return int(match.group(2)) if match else None
 
 
 def get_rid(ctx, role_input: Union[list, Tuple]) -> Tuple[List[int], int]:
@@ -67,22 +98,28 @@ def get_rid(ctx, role_input: Union[list, Tuple]) -> Tuple[List[int], int]:
 
 # gets you a channel from an ID in a text
 # like get_rid but less advanced (no search for names)
-def get_chan(guild, channel_input: str):
-    channel_id = re.search(r"\d{18}", channel_input)
+def get_chan(guild, channel_input: Union[Iterable, str]):
+    """
+    gets a channel from an ID in a text\n
+    :param guild: the channel is located on - if it exists
+    :param channel_input: string or iterable containing strings to be searched
+
+    :return: channel if it exists else None
+    """
+    channel_id = extract_id_from_message(channel_input)
     channel = None
     if channel_id is not None:
-        channel_id = channel_id.group(0)
-        channel = guild.get_channel(int(channel_id))
+        channel = guild.get_channel(channel_id)
     return channel  # returning channel object
 
 
 # creating and returning an embed with keyword arguments
 # please note that name and value can't be empty - good news: they aren't ;)
-def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", text=None):
+def make_embed(title="", color=discord.Color.blue(), name="‌", value="‌", footer=None):
     emby = discord.Embed(title=title, color=color)
     emby.add_field(name=name, value=value)
-    if text:
-        emby.set_footer(text=text)
+    if footer:
+        emby.set_footer(text=footer)
 
     return emby
 

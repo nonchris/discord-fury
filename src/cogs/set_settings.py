@@ -1,19 +1,13 @@
-# built in
-import os
-import time
-import sql_utils as sqltils
+from typing import Union
 
-# pip
 import discord
 from discord.ext import commands
 
-# own files
 from environment import PREFIX, CHANNEL_TRACK_LIMIT
-import utils
-
-global db_file
-db_file = "data/fury1.db"  # variables will be gone with the next update 
-SQL_VERSION = 1
+import database.db_models as db_models
+import database.access_settings_db as settings_db
+import database.access_channels_db as channels_db
+import utils as utils
 
 
 class Settings(commands.Cog):
@@ -24,204 +18,320 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="set-voice-channel", aliases=["set-voice", "svc"],
-                      help=f"Allows you to register a voice channel that members can join into to get an own channel\n\n \
-        Usage: \
-        `{PREFIX}svc` [_pub_ | _priv_] [_channel-id_]\n\n \
-        _pub_ and _priv_ are the options for the channels that are created when joining the creation-channel.\n \
-        This option is - obviously - admin only")
+    @commands.command(
+        name="add", aliases=["svc", "set-voice", "set-voice-channel"],
+        help=f"Register a voice channel that members can join to get an own channel\n\n"
+        "__Usage:__\n"
+        f"`{PREFIX}add` [_public_ | _private_] [_channel-id_]\n\n"
+        "_public_ or _private_ is the option for the channel-type that is created when joining the tracked-channel.\n"
+        "This option is - obviously - admin only\n\n"
+        f"Aliases: `{PREFIX}svc` `{PREFIX}set-voice [channel type] [channel id]`")
     @commands.has_permissions(administrator=True)
-    async def set_voice(self, ctx, setting: str, value: str):
-        # possible settings switch -returns same value but nothing if key isn't valid
+    async def set_voice(self, ctx: commands.Context, setting: str, value: str):
+        """
+        Add a voice channel setting to the database
+        :param ctx: command context
+        :param setting: setting to be added like 'public'
+        :param value: id or mention the channel to be entered into the database
+        """
+
+        # channel to be returned with dict
+        # cache variable - the function would be called for each key if we'd place it in each tuple of the dict
+        _channel = utils.get_chan(ctx.guild, value)
+
+        # 'translation' dict
+        # used to verify that input is correct and to make sure that we always handle the same name internally
         settings = {
-            "pub-channel": ("pub", utils.get_chan(ctx.guild, value)),
-            "pub": ("pub", utils.get_chan(ctx.guild, value)),
-            "priv-channel": ("priv", utils.get_chan(ctx.guild, value)),
-            "priv": ("priv", utils.get_chan(ctx.guild, value)),
+            "pub-channel": ("public_channel", _channel),
+            "public-channel": ("public_channel", _channel),
+            "pub": ("public_channel", _channel),
+            "public": ("public_channel", _channel),
+
+            "priv-channel": ("private_channel", _channel),
+            "private-channel": ("private_channel", _channel),
+            "priv": ("private_channel", _channel),
+            "private": ("private_channel", _channel),
         }
+
         # trying to get a corresponding channel / id
-        setting, value = settings.get(setting)
-        # if value is "None" this means that there is no such setting or no such value for it
+        setting, channel = settings[setting]
+
+        # if channel is "None" this means that there is no such setting or no such channel for it
         # -> ensures that the process of getting a correct setting has worked
-        if value is not None and value.type == discord.ChannelType.voice:
-
-            # connecting to db - creating a new one if there is none yet
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-
-            # Settings won't be stored if max watched channels are reached
-            # -> searching for amount of matching entries
-            if len(db.search_table(value=setting, column="setting")) >= CHANNEL_TRACK_LIMIT:
-
-                text = f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels for this setting\n \
-                        If you wanna change the channels I watch use `{PREFIX}ds [channel-id]` to remove a channel from your settings"
-                emby = utils.make_embed(color=discord.Color.orange(), name="Too many entries", value=text)
-                await ctx.send(embed=emby)
-
-            # writing entry to db - the way things sould go
-            else:
-                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
-                db.write_server_table(entry)
-
-                emby = utils.make_embed(color=discord.Color.green(), name="Success", value="Setting saved")
-                await ctx.send(embed=emby)
-
-        # when false inputs were given
-        else:
-            value = ("Please ensure that you've entered a valid setting \
-                    and channel-id for that setting.")
-            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=value)
+        if channel is None:
+            emby = utils.make_embed(
+                color=discord.Color.orange(),
+                name="Can't get setting",
+                value="Please ensure that you've entered a valid setting and channel-id for that setting.")
             await ctx.send(embed=emby)
+            return
 
-    @commands.command(name="get-settings", aliases=["gs"], help=f"\
-                                Get a list of all watched 'create-voice' channels - short: `{PREFIX}gs`")
+        # if channel type is not voice channel
+        if type(channel) is not discord.VoiceChannel:
+            embed = utils.make_embed(
+                name='Not a voice channel',
+                value=f"The channel {channel.name} is no voice channel, please enter a valid channel-id",
+                color=utils.yellow
+            )
+            await ctx.send(embed=embed)
+            return
+
+        # Settings won't be stored if max watched channels are reached
+        # -> searching for amount of matching entries
+        entries = settings_db.get_all_settings_for(ctx.guild.id, setting)
+        if entries and len(entries) >= CHANNEL_TRACK_LIMIT:
+            emby = utils.make_embed(
+                color=utils.orange, name="Too many entries",
+                value=f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels for this setting\n"
+                      f"If you wanna change the channels I watch use `{PREFIX}ds [channel-id]` "
+                      f"to remove a channel from your settings")
+
+            await ctx.send(embed=emby)
+            return
+
+        # check if channel was already given to track
+        session = db_models.open_session()
+        entry: Union[db_models.Settings, None] = settings_db.get_setting_by_value(ctx.guild.id, channel.id, session)
+
+        # if channel is already registered - update
+        if entry:
+            entry.setting = setting
+
+            session.add(entry)
+            session.commit()
+
+        # create new entry, channel not tracked yet
+        else:
+            # write entry to db
+            settings_db.add_setting(
+                guild_id=ctx.guild.id,
+                setting=setting,
+                value=channel.id,
+                set_by=ctx.author.id,
+            )
+
+        emby = utils.make_embed(
+            color=utils.green, name="Success", value=f"Set {channel.name} as {setting.replace('_', ' ')}")
+        await ctx.send(embed=emby)
+
+    @commands.command(name="settings", aliases=["gs", "get-settings"],
+                      help=f"Get a list of all 'watched' channels as well as all other settings\n\n"
+                           f"Aliases: `gs`, `get-settings` ")
     @commands.has_permissions(kick_members=True)
     async def get_settings(self, ctx):
         """
-        prints set channels
+        prints setting on guild
         """
-        db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-        results = db.read_server_table()  # gets a list ob entry objects
+
+        tracked_channels = [*settings_db.get_all_settings_for(ctx.guild.id, "public_channel"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "private_channel"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "archive_category"),
+                            *settings_db.get_all_settings_for(ctx.guild.id, "log_channel")]
 
         pub = "__Public Channels:__\n"
         priv = "__Private Channels:___\n"
-        log = "__Log Channel__\n"
-        archive = "__Archive Category__\n"
-        for i in range(len(results)):  # building strings
-            if results[i].setting == "pub-channel" or results[i].setting == "pub":
-                pub += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+        log = "__Log Channel:__\n"
+        archive = "__Archive Category:__\n"
+        for i, elm in enumerate(tracked_channels):  # building strings
+            if elm.setting == "public_channel":
+                pub += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "priv-channel" or results[i].setting == "priv":
-                priv += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "private_channel":
+                priv += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "log":
-                log += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "log_channel":
+                log += f"`{ctx.guild.get_channel(int(elm.value)).mention}` with ID `{elm.value}`\n"
 
-            elif results[i].setting == "archive":
-                archive += f"`{ctx.guild.get_channel(results[i].value_id)}` with ID `{results[i].value_id}`\n"
+            elif elm.setting == "archive_category":
+                archive += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
-        emby = utils.make_embed(color=discord.Color.green(), name="Server Settings",
-                                value=f"‌\n{pub}\n {priv}\n{archive}\n{log}")
+        emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
+                                value=f"‌\n"
+                                      f"{pub}\n"
+                                      f"{priv}\n"
+                                      f"{archive}\n"
+                                      f"{log}")
         await ctx.send(embed=emby)
 
     @commands.command(name="delete-setting", aliases=["ds"],
-                      help=f"Remove a channel from the list of watched 'create-voice' channels. \n\
-                        This command will only untrack the channel, it will _not_ delete anything on your server.\n\n\
-                        Usage: `{PREFIX}ds` [_channel-id_]\n\n\
-                        Get a list of all watched channels with `{PREFIX}gs`\n ")
+                      help=f"Remove a setting for your guild.\n\n"
+                           f"Usable to delete:\n"
+                           f"- channels from the list of 'watched' channels\n"
+                           f"- the archive category\n"
+                           f"- the log channel\n"
+                           "This command will only clear the setting from the bots database!\n"
+                           f"It will _not_ delete anything on your server.\n\n"
+                           f"Usage: `{PREFIX}ds` [_channel-id_]\n\n"
+                           f"Get a list of all watched channels with `{PREFIX}gs`\n "
+                           f"Aliases: `ds`")
     @commands.has_permissions(administrator=True)
-    async def delete_settings(self, ctx, value):
+    async def delete_settings(self, ctx: commands.Context, value: str):
         """
-        remove set channels
+        remove tracked channel from database
+
+        :param ctx: command context
+        :param value: id of the channel to be deleted
         """
-        if value:
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-            try:
-                int(value)  # fails when string is given
-                if len(value) == 18:
-                    # all checks passed - removing that entry
-                    db.remove_line(int(value), column="value_id")
-                    channel = ctx.guild.get_channel(int(value))
-                    await ctx.send(embed=utils.make_embed(color=discord.Color.green(), name="Deleted",
-                                                          value=f"Removed `{channel}` from settings"))
-                else:
-                    raise  # enter except
-
-            except:
-                emby = utils.make_embed(color=discord.Color.orange(), name="No valid channel ID", value="It seems like you din't \
-                                    give me a valid channel ID to work with")
-                await ctx.send(embed=emby)
-            # db.remove_line(value, column="value")
-
-        else:
-            emby = utils.make_embed(color=discord.Color.orange(), name="No input", value=f"This function requires exactly one input:\n \
-                                `channel-ID` please give a valid channel ID as argument to remove that channel from \
-                                the list of watched channels.\n \
-                                You can get a list of all watched channels with `{PREFIX}gs`")
+        if not value:
+            emby = utils.make_embed(
+                color=utils.orange,
+                name="No input",
+                value=f"This function requires exactly one input:\n"
+                      "`channel-id` please give a valid channel ID as argument to remove that channel from"
+                      "the list of watched channels.\n"
+                      f"You can get a list of all watched channels with `{PREFIX}gs`")
 
             await ctx.send(embed=emby)
+            return
+
+        channel_id = utils.extract_id_from_message(value)
+        if not channel_id:
+
+            emby = utils.make_embed(color=utils.orange,
+                                    name="No valid channel ID",
+                                    value="It seems like you didn't give me a valid channel ID to work with")
+            await ctx.send(embed=emby)
+            return
+
+        # all checks passed - removing that entry
+        settings_db.del_setting_by_value(ctx.guild.id, channel_id)
+
+        channel = ctx.guild.get_channel(channel_id)
+        await ctx.send(embed=utils.make_embed(color=utils.green, name="Deleted",
+                                              value=f"Removed "
+                                                    f"`{channel.name if channel else channel_id}` from settings"))
 
     # command to set-edit-vc permissions
-    @commands.command(name='allow-edit', aliases=['al'],
-                      help=f'Change whether created public VC names can be edited by the channel creator.\n\
-                Arguments: [_yes_ | _no_]\n\
-                Default is _no_')
+    @commands.command(name='allow-edit', aliases=['al', 'ae'],
+                      help=f'Change whether the name of created public channels can be edited by the channel creator.\n'
+                           'Arguments: [_yes_ | _no_]\n'
+                           'Default is _no_\n'
+                           f"Aliases: `al`, `as`\n\n"
+                           f"This command is admin only.")
     @commands.has_permissions(administrator=True)
     async def edit_channel(self, ctx, value: str):
         settings = {'yes': 1,
                     'no': 0}
 
-        value_num = settings.get(value.lower())
-        if value_num != None:
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
-
-            # if setting is already there old value needs to be deleted
-            if len(db.search_table(value="edit_channel",
-                                   column="setting")) == 1:  # there can only be one archive and log
-                db.remove_line('"edit_channel"', column="setting")
-
-            entry = ("edit_channel", "value_name", value_num,
-                     time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
-            db.write_server_table(entry)
-
-            emby = utils.make_embed(color=discord.Color.green(),
-                                    name="Success",
-                                    value=f"Channel Creator can edit channel-name: {value}")
-            await ctx.send(embed=emby)
-
-        else:
+        yes_or_no = settings[value.lower()]
+        if not yes_or_no:
             emby = utils.make_embed(color=discord.Color.orange(),
                                     name="Missing argument",
                                     value=f"Please enter `yes` or `no` as argument.")
             await ctx.send(embed=emby)
+            return
 
-    @commands.command(name="set", aliases=["sa"], help=f"Change various settings.\n\n\
-        Usage: \
-        `{PREFIX}sa` [_archive_ | _log_] [_channel-id_]\n\n \
-        Note that text-channels will only be archived when they contain at least one message, they'll be deleted otherwise. \n \
-        This option is - also - admin only")
+        session = db_models.open_session()
+        entry = settings_db.get_first_setting_for(ctx.guild.id, "allow_public_rename", session=session)
+
+        # edit entry if exists
+        if entry:
+            entry.value = str(yes_or_no)
+            entry.is_active = True  # set to true because it should be active if changed
+            session.add(entry)
+            session.commit()
+
+        else:
+            settings_db.add_setting(
+                guild_id=ctx.guild.id,
+                setting="allow_public_rename",
+                value=str(yes_or_no),
+                set_by=str(ctx.author.id)
+            )
+
+        emby = utils.make_embed(color=utils.green,
+                                name="Success",
+                                value=f'The channel creator {"can" if yes_or_no else "can _not_"} '
+                                      f'edit the name of a created public channel\n',
+                                footer="Note that this setting has no affect on private channels")
+        await ctx.send(embed=emby)
+
+    @commands.command(
+        name="set", aliases=["sa", "sl", "archive", "log"],
+        help=f"Change settings for:\n\n"
+             f"__log:__\n"
+             f"Channel for log messages\n"
+             f"__archive:__\n"
+             f"Category linked text channels shall be moved to after linked voice-channel was deleted.\n\n"
+             "Usage\n:"
+             f"`{PREFIX}set` [_archive_ | _log_] [_channel-id_]\n\n"
+             "Note that text-channels will only be archived when they contain at least one message, "
+             "they'll be deleted otherwise.\n\n"
+             "Your setting will be updated if you already set a log / archive.\n\n"
+             f"Aliases: `archive`, `log`, `sa`, `sl`\n\n"
+             "This option is admin only")
     @commands.has_permissions(administrator=True)
-    async def set_archive(self, ctx, setting: str, value: str):
-        # possible settings switch -returns same value but nothing if key isn't valid
+    async def set_archive(self, ctx: commands.Context, setting: str, value: str):
+
+        # async def set_archive(self, ctx: commands.Context, setting: str, value: str):
+        if not setting:
+            msg = ("Please ensure that you've entered a valid setting \
+                                and channel-id or role-id for that setting.")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+            await ctx.send(embed=emby)
+
+            return
+
+        if not value:
+            msg = ("Please ensure that you've entered a valid setting \
+                                            and channel-id or role-id for that setting.")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+            await ctx.send(embed=emby)
+
+            return
+
+        # possible settings switch - returns same value but nothing if key isn't valid
         settings = {
-            "archive": utils.get_chan(ctx.guild, value),
-            "log": utils.get_chan(ctx.guild, value)
+            "archive": "archive_category",
+            "achive": "archive_category",
+            "arch": "archive_category",
+            "log": "log_channel"
         }
+
+        set_channel = utils.get_chan(ctx.guild, value)
+
         # trying to get a corresponding channel / id
-        value = settings.get(setting)
+        setting_type = settings[setting]
+
         # if value is "None" this means that there is no such setting or no such value for it
         # checking if keyword matches the entered channel type
         # -> ensures that the process of getting a correct setting has worked
 
+        text = ""
+        if type(set_channel) == discord.TextChannel and setting_type == "log_channel":
+            text = "log channel"
+
+        elif type(set_channel) == discord.CategoryChannel and setting_type == "archive_category":
+            text = "archive category"
+
         # set channels
-        if value is not None and value.type == discord.ChannelType.text and setting == "log" \
-                or value.type == discord.ChannelType.category and setting == "archive":
+        if text:
 
-            # connecting to db - creating a new one if there is none yet
-            db = sqltils.DbConn(db_file, ctx.guild.id, "setting")
+            # check if not none
+            session = db_models.open_session()
+            entry = settings_db.get_first_setting_for(ctx.guild.id, setting_type, session=session)
 
-            # Settings won't be stored if max watched channels are reached
-            # -> searching for amount of matching entries
-            if len(db.search_table(value=setting, column="setting")) >= 1:  # there can only be one archive and log
+            if entry:
+                # TODO: SEND REPLY
+                entry.value = setting_type
+                session.add(entry)
+                session.commit()
 
-                text = f"Hey, you can only have one archive and log at once\n \
-                        If you wanna change those settings use `{PREFIX}ds [channel-id]` to remove a channel from your settings"
-                emby = utils.make_embed(color=discord.Color.orange(), name="Too many entries", value=text)
-                await ctx.send(embed=emby)
+                await ctx.send(embed=utils.make_embed(name=f"Updated setting: {text}",
+                                                      value=f"Set to {set_channel.name}",
+                                                      color=utils.green))
 
-            # writing entry to db - the way things should go
-            else:
-                entry = (setting, "value_name", value.id, time.strftime("%Y-%m-%d %H:%M:%S"), SQL_VERSION)
-                db.write_server_table(entry)
+                return
 
-                emby = utils.make_embed(color=discord.Color.green(), name="Success", value="Setting saved")
-                await ctx.send(embed=emby)
-
-        # when false inputs were given
-        else:
-            value = ("Please ensure that you've entered a valid setting \
-                    and channel-id or role-id for that setting.")
-            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=value)
-            await ctx.send(embed=emby)
+            settings_db.add_setting(
+                guild_id=ctx.guild.id,
+                setting=setting_type,
+                value=set_channel.id,
+                set_by=f"{ctx.author.id}"
+            )
+            await ctx.send(embed=utils.make_embed(name=f"Added setting: {text}",
+                                                  value=f"Set to {set_channel.name}",
+                                                  color=utils.green))
 
 
 def setup(bot):
