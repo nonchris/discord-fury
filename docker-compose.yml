@@ -2,7 +2,7 @@
 version: "3"
 services:
   discord-fury:
-    image: nonchris/discord-fury
+    image: nonchris/discord-fury:2.0
     container_name: discord-fury
     volumes:
       - "./data/app:/app/data:rw"
