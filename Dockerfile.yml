@@ -6,6 +6,7 @@
     - apt_packages:
       - python3
       - python3-pip
+      - tzdata
     - pip3_packages:
         discord:
           name: discord.py
