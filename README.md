@@ -53,8 +53,22 @@ Use `f!help settings` to learn more about the way configure the bot.
 `Admin` contains a command for getting a role id by entering the roles name
 Use `f!help` to learn more about all modules and commands.
 
-### Setup
+## Setup
 Run the bot using `docker-compose` using the image from Docker Hub `nonchris/discord-fury`.
+
+### Environment variables
+| Variable | Required | Function | Default |  
+| ------ |   ------ | ------- | ------- | 
+| TOKEN | yes | Token to run your bot with | - |
+| POSTGRES_USER | yes | Username for database | - |
+| POSTGRES_PASSWORD | yes | Password to database | - |
+| POSTGRES_DB | yes | Name of the database | - |
+| PREFIX | no | Prefix the bot listens to | f! |
+| VERSION | no | Version displayed by bot | unknown |
+| OWNER_ID | no | To mention the owner if on server | 100000000000000000 |
+| OWNER_NAME | no | To give the owners name if not on server | unknown |
+| CHANNEL_TRACK_LIMIT | no | Limit of tracked channels per server per type | 20 |
+
 
 ### Update from old v1.x.x database structure to v2.0.0
 With the update to v2.0.0 the bots internal database structure was rewritten using SQLAlchemy.  
