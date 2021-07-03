@@ -29,12 +29,17 @@ import psycopg2
 if not os.path.exists('data/'):
     os.mkdir('data/')
 
-db_url = os.environ["db_url"]
-
-engine = create_engine(f'postgresql+psycopg2://{db_url}', echo=False)
-Base: declarative_base = declarative_base()
-
 logger = logging.getLogger('my-bot')
+
+POSTGRES_USER = os.environ["POSTGRES_USER"]
+POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
+POSTGRES_DB = os.environ["POSTGRES_DB"]
+
+DB_URL = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@db/{POSTGRES_DB}"
+engine = create_engine(f'postgresql+psycopg2://{DB_URL}', echo=False)
+
+
+Base: declarative_base = declarative_base()
 
 
 class Settings(Base):
