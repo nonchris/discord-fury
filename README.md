@@ -54,26 +54,19 @@ Use `f!help settings` to learn more about the way configure the bot.
 Use `f!help` to learn more about all modules and commands.
 
 ### Setup
-Create a docker-compose file
+Run the bot using `docker-compose` using the image from Docker Hub `nonchris/discord-fury`.
+
+### Update from old v1.x.x database structure to v2.0.0
+With the update to v2.0.0 the bots internal database structure was rewritten using SQLAlchemy.  
+The new version also uses postgres instead of sqlite.  
+It's suggested to upgrade since new features will only be developed for v2.
+
+#### Migrate your database
+Add those environment variables to your compose file.  
+The container will start the script `migrate_to_alchemy.py` which handles the migration process.  
+Stop the container when the script is finished and remove those parameters to run the container as usual. 
 ```yaml
-version: '3'
-services:
-  python_runtime:
-    container_name: discord-fury
-    image: nonchris/discord-fury
-    volumes:
-      - "./data:/app/data"
-    environment:
-      - UID=1000 
-      - GID=1000
-      - TOKEN=
-      - PREFIX=
-      - VERSION=
-      - OWNER_ID=
-      - OWNER_NAME=
-      - CHANNEL_TRACK_LIMIT=
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
+      - run=migrate_to_alchemy.py
+      - OLD_DB_PATH=data/fury1.db
 ```
-* Start the bot with `docker-compose`
+You need to move the data/ folder if you copied the latest docker-compose file.
