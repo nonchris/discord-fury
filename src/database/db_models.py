@@ -33,9 +33,10 @@ logger = logging.getLogger('my-bot')
 
 POSTGRES_USER = os.environ["POSTGRES_USER"]
 POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
+POSTGRES_SERVER = os.environ["POSTGRES_SERVER"]
 POSTGRES_DB = os.environ["POSTGRES_DB"]
 
-DB_URL = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@db/{POSTGRES_DB}"
+DB_URL = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DB}"
 engine = create_engine(f'postgresql+psycopg2://{DB_URL}', echo=False)
 
 

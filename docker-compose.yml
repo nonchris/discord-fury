@@ -11,6 +11,7 @@ services:
       - GID=1000
       - POSTGRES_USER=db_user
       - POSTGRES_PASSWORD=db_pw
+      - POSTGRES_SERVER=db
       - POSTGRES_DB=db_name
       - TOKEN=
       - PREFIX=

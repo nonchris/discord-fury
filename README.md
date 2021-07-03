@@ -62,6 +62,7 @@ Run the bot using `docker-compose` using the image from Docker Hub `nonchris/dis
 | TOKEN | yes | Token to run your bot with | - |
 | POSTGRES_USER | yes | Username for database | - |
 | POSTGRES_PASSWORD | yes | Password to database | - |
+| POSTGRES_SERVER | yes | Server the db is located on | - |
 | POSTGRES_DB | yes | Name of the database | - |
 | PREFIX | no | Prefix the bot listens to | f! |
 | VERSION | no | Version displayed by bot | unknown |
