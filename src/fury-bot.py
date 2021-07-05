@@ -46,7 +46,6 @@ async def on_command_error(ctx, error):
     """
     Overwriting command error handler from discord.py
     """
-    print(error)
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You can\'t do that. Pleases ask an Admin')
 
