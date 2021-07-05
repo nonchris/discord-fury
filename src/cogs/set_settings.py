@@ -205,22 +205,23 @@ class Settings(commands.Cog):
             await ctx.send(embed=emby)
             return
 
-        channel_id = utils.extract_id_from_message(value)
-        if not channel_id:
-
+        # get channel setting or setting string
+        setting = utils.extract_id_from_message(value) or settings.get(value, None)
+        if not setting:
             emby = utils.make_embed(color=utils.orange,
-                                    name="No valid channel ID",
-                                    value="It seems like you didn't give me a valid channel ID to work with")
+                                    name="No valid setting",
+                                    value="It seems like you didn't give me a valid channel ID or "
+                                          "setting name to work with")
             await ctx.send(embed=emby)
             return
 
         # all checks passed - removing that entry
-        settings_db.del_setting_by_value(ctx.guild.id, channel_id)
+        settings_db.del_setting_by_setting(ctx.guild.id, setting)
 
-        channel = ctx.guild.get_channel(channel_id)
+        channel = ctx.guild.get_channel(setting)
         await ctx.send(embed=utils.make_embed(color=utils.green, name="Deleted",
                                               value=f"Removed "
-                                                    f"`{channel.name if channel else channel_id}` from settings"))
+                                                    f"`{channel.name if channel else setting}` from settings"))
 
     # command to set-edit-vc permissions
     @commands.command(name='allow-edit', aliases=['al', 'ae'],

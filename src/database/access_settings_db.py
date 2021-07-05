@@ -146,12 +146,31 @@ def del_setting(guild_id: int, setting: str, value: Union[str, int]):
     session.commit()
 
 
-def del_setting_by_value(guild_id: int, value: Union[str, int]):
+def del_setting_by_setting(guild_id: int, setting: str):
     """
-    Delete an entry from the settings table
+    Delete an entry from the settings table by giving only the settings name
 
     :param guild_id: id the setting is in
-    :param value: value of the setting - probably name of a word-list
+    :param setting: the setting - like archive or prefix
+    """
+
+    session = db.open_session()
+    statement = delete(db.Settings).where(
+        and_(
+            db.Settings.guild_id == guild_id,
+            db.Settings.setting == setting
+        )
+    )
+    session.execute(statement)
+    session.commit()
+
+
+def del_setting_by_value(guild_id: int, value: Union[str, int]):
+    """
+    Delete an entry from the settings table by giving only the value
+
+    :param guild_id: id the setting is in
+    :param value: value of the setting like a channel id
     """
 
     if type(value) is int:
