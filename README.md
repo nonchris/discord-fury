@@ -14,11 +14,14 @@
 ## Settings
 | Command | Description | Alternative |  
 | ------ |   ------ | ------- | 
-| `f!set [log channel / archive category]` | Add setting for archive category and log channel | `archive`, `log` |
+| `f!set [log channel / archive category] [channel]` | Add setting for archive category and log channel | `archive`, `log` |
+| `f!set prefix [prefix]` | Use custom prefix on your server | same as above |
 | `f!delete-settings [channel id]` | Removes a channel from the tracked list | `ds` |
 | `f!settings` | Get a list of all configured settings | `gs`, `get-settings` |
 | `f!allow-edit [yes / no]` | Allow the creator of a public channel to edit the name, default is no | `al`, `ae` |
 | `f!ping` | Check if the bot is available | |
+The bot also listens for mentions, so `@bot help` is also a valid command.  
+Not that the default prefix can be changed on a guild since `v2.0.1`
 
 ## Functions:
 ### Create voice channels on demand
@@ -69,6 +72,7 @@ Run the bot using `docker-compose` using the image from Docker Hub `nonchris/dis
 | OWNER_ID | no | To mention the owner if on server | 100000000000000000 |
 | OWNER_NAME | no | To give the owners name if not on server | unknown |
 | CHANNEL_TRACK_LIMIT | no | Limit of tracked channels per server per type | 20 |
+| MAX_PREFIX_LENGTH | no | Max length for a custom prefix | 3 |
 
 
 ### Update from old v1.x.x database structure to v2.0.0

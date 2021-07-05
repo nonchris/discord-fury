@@ -47,7 +47,7 @@ class Settings(Base):
     __tablename__ = 'SETTINGS'
 
     # setting names:
-    # mod_role, public_channel, private_channel, archive_category, log_channel, allow_public_rename
+    # mod_role, public_channel, private_channel, archive_category, log_channel, allow_public_rename, prefix
 
     id = Column(Integer, primary_key=True)
     guild_id = Column(BigInteger)      # ID of guild setting is applied to
