@@ -11,12 +11,24 @@ import database.access_channels_db as channels_db
 import utils as utils
 
 # possible settings switch - returns same value but nothing if key isn't valid
+# used to verify that input is correct and to make sure that we always handle the same name internally
+
 settings = {
     "archive": "archive_category",
     "achive": "archive_category",
     "arch": "archive_category",
     "log": "log_channel",
     "prefix": "prefix",
+
+    "pub-channel": "public_channel",
+    "public-channel": "public_channel",
+    "pub": "public_channel",
+    "public": "public_channel",
+
+    "priv-channel": "private_channel",
+    "private-channel": "private_channel",
+    "priv": "private_channel",
+    "private": "private_channel",
 }
 
 
@@ -45,26 +57,9 @@ class Settings(commands.Cog):
         :param value: id or mention the channel to be entered into the database
         """
 
-        # channel to be returned with dict
-        # cache variable - the function would be called for each key if we'd place it in each tuple of the dict
-        _channel = utils.get_chan(ctx.guild, value)
-
-        # 'translation' dict
-        # used to verify that input is correct and to make sure that we always handle the same name internally
-        settings = {
-            "pub-channel": ("public_channel", _channel),
-            "public-channel": ("public_channel", _channel),
-            "pub": ("public_channel", _channel),
-            "public": ("public_channel", _channel),
-
-            "priv-channel": ("private_channel", _channel),
-            "private-channel": ("private_channel", _channel),
-            "priv": ("private_channel", _channel),
-            "private": ("private_channel", _channel),
-        }
-
         # trying to get a corresponding channel / id
-        setting, channel = settings[setting]
+        setting = settings[setting]
+        channel = utils.get_chan(ctx.guild, value)
 
         # if channel is "None" this means that there is no such setting or no such channel for it
         # -> ensures that the process of getting a correct setting has worked
