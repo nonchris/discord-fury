@@ -133,7 +133,8 @@ class Settings(commands.Cog):
         """
 
         tracked_channels = []
-        for setting in settings.values():
+        # conversion to set since some keys appear multiple times due to aliases
+        for setting in set(settings.values()):
             entries = settings_db.get_all_settings_for(ctx.guild.id, setting)
             if entries:
                 tracked_channels.extend(entries)
@@ -142,7 +143,7 @@ class Settings(commands.Cog):
         priv = "__Private Channels:___\n"
         log = "__Log Channel:__\n"
         archive = "__Archive Category:__\n"
-        prefix = "__Prefixes:__"
+        prefix = "__Prefixes:__\n"
         if not tracked_channels:
             emb = utils.make_embed(color=utils.yellow, name="No configuration yet",
                                    value="You didn't configure anything yet.\n"
