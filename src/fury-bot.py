@@ -10,6 +10,8 @@ from discord.ext import commands
 import log_setup
 from environment import PREFIX, TOKEN
 import utils
+import database.db_models as db
+import database.access_settings_db as settings_db
 
 logger = logging.getLogger("my-bot")
 
@@ -17,9 +19,26 @@ intents = discord.Intents.all()
 # intents.presences = True
 
 
+# inspired by https://github.com/Rapptz/RoboDanny
+def _prefix_callable(_bot: commands.Bot, msg: discord.Message):
+    user_id = _bot.user.id
+    base = [f'<@!{user_id}> ', f'<@{user_id}> ']
+    if msg.guild is None:  # we're in DMs
+        base.append(PREFIX)
+        return base
+
+    # look if there are custom prefix settings here
+    entries = settings_db.get_all_settings_for(msg.guild.id, "prefix")
+    if entries is not None:
+        prefixes = [entry.value for entry in entries]
+        base.extend(prefixes)
+    else:  # nope boring, using standard prefix
+        base.append(PREFIX)
+    return base
+
+
 # setting prefix and defining bot
-bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-client = discord.Client()  # defining client
+bot = commands.Bot(command_prefix=_prefix_callable, intents=intents)
 
 
 # game = discord.Game('Waiting')
