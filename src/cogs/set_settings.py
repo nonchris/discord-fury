@@ -1,9 +1,10 @@
-from typing import Union
+import re
+from typing import Union, Tuple
 
 import discord
 from discord.ext import commands
 
-from environment import PREFIX, CHANNEL_TRACK_LIMIT
+from environment import PREFIX, CHANNEL_TRACK_LIMIT, MAX_PREFIX_LENGTH
 import database.db_models as db_models
 import database.access_settings_db as settings_db
 import database.access_channels_db as channels_db
@@ -299,6 +300,36 @@ class Settings(commands.Cog):
                                               color=utils.orange))
 
         return None, None
+
+    @staticmethod
+    async def prefix_validation(ctx: commands.Context, new_prefix: str) -> Union[Tuple[str, str], Tuple[None, None]]:
+        """
+        Validate that a prefix fit the set criteria, send error message if it does not match\n
+        Criteria:\n
+        - shorter or equal to env variable MAX_PREFIX_LENGTH\n
+        - ends on a non-word character like '!'
+        
+        :param ctx: context of the command, used to send a possible message
+        :param new_prefix: string to validate
+        
+        :returns: (prefix, prefix) if its valid, else (None, None)
+        """
+        example_prefix = f"A valid prefix would be `{'f' * (MAX_PREFIX_LENGTH - 1)}!` or just `?`"
+
+        # validate length and scheme
+        # example: r"^\w{0,3}\W$" (the upper limit can be changed dynamically)
+        pattern = re.compile(r"^\w{0," + str(MAX_PREFIX_LENGTH - 1) + r"}\W$")
+        if re.search(pattern, new_prefix) is not None:
+            return new_prefix, new_prefix  # prefix shall be entered to db and be sent in message
+
+        await ctx.send(embed=utils.make_embed(
+            name="Prefix should be short and easy to remember",
+            value=f"The length limit for this bot is {MAX_PREFIX_LENGTH - 1} letters or digits, "
+                  f"followed by one 'non-word' character like !, ?, ~\n"
+                  f"{example_prefix}",
+            color=utils.yellow))
+        return None, None
+
     @commands.command(
         name="set", aliases=["sa", "sl", "archive", "log"],
         help=f"Change settings for:\n\n"
@@ -306,17 +337,19 @@ class Settings(commands.Cog):
              f"Channel for log messages\n"
              f"__archive:__\n"
              f"Category linked text channels shall be moved to after linked voice-channel was deleted.\n\n"
+             f"__prefix:__\n"
+             f"Prefix the bot listens to on your server.\n\n"
              "Usage\n:"
              f"`{PREFIX}set` [_archive_ | _log_] [_channel-id_]\n\n"
+             f"`{PREFIX}set` [_prefix_] [_new-prefix_]\n\n"
              "Note that text-channels will only be archived when they contain at least one message, "
              "they'll be deleted otherwise.\n\n"
              "Your setting will be updated if you already set a log / archive.\n\n"
              f"Aliases: `archive`, `log`, `sa`, `sl`\n\n"
              "This option is admin only")
     @commands.has_permissions(administrator=True)
-    async def set_archive(self, ctx: commands.Context, setting: str, value: str):
+    async def set_setting(self, ctx: commands.Context, setting: str, value: str):
 
-        # async def set_archive(self, ctx: commands.Context, setting: str, value: str):
         if not setting:
             msg = ("Please ensure that you've entered a valid setting \
                                 and channel-id or role-id for that setting.")
@@ -333,10 +366,16 @@ class Settings(commands.Cog):
 
             return
 
+        # look if setting name is valid
+        setting = setting.lower()  # dict only handles lower case, so do we all the time
+        setting_type = settings.get(setting, None)
+        nice_string = setting_type.replace('_', ' ')
 
-        # trying to get a corresponding channel / id
-        setting_type = settings[setting]
-
+        if not setting_type:
+            await ctx.send(embed=utils.make_embed(name=f"'{setting}' is no valid setting name",
+                                                  value="Use the help command to get an overview of possible settings",
+                                                  color=utils.yellow))
+            return
 
         # setting is validated, let's see if the value matches the required setting
         value = value.strip()  # just in case
@@ -345,11 +384,14 @@ class Settings(commands.Cog):
             # trying to get a corresponding channel (id: str, name/ mention: str)
             set_value, set_name = await self.channel_from_input(ctx, setting_type, value)
 
+        if setting_type == "prefix":
+            # need to await since it sends the error message if we can't match
+            set_value, set_name = await self.prefix_validation(ctx, value)
 
         # make database entry
         if set_value:
 
-            # check if not none
+            # check if there is an entry for that setting - toggle it
             session = db_models.open_session()
             entry = settings_db.get_first_setting_for(ctx.guild.id, setting_type, session=session)
 
