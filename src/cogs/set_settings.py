@@ -123,15 +123,24 @@ class Settings(commands.Cog):
         prints setting on guild
         """
 
-        tracked_channels = [*settings_db.get_all_settings_for(ctx.guild.id, "public_channel"),
-                            *settings_db.get_all_settings_for(ctx.guild.id, "private_channel"),
-                            *settings_db.get_all_settings_for(ctx.guild.id, "archive_category"),
-                            *settings_db.get_all_settings_for(ctx.guild.id, "log_channel")]
+        tracked_channels = []
+        for setting in settings.values():
+            entries = settings_db.get_all_settings_for(ctx.guild.id, setting)
+            if entries:
+                tracked_channels.extend(entries)
 
         pub = "__Public Channels:__\n"
         priv = "__Private Channels:___\n"
         log = "__Log Channel:__\n"
         archive = "__Archive Category:__\n"
+        prefix = "__Prefixes:__"
+        if not tracked_channels:
+            emb = utils.make_embed(color=utils.yellow, name="No configuration yet",
+                                   value="You didn't configure anything yet.\n"
+                                         "Use the help command or try the quick-setup to get started :)")
+            await ctx.send(embed=emb)
+            return
+
         for i, elm in enumerate(tracked_channels):  # building strings
             if elm.setting == "public_channel":
                 pub += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
@@ -144,13 +153,16 @@ class Settings(commands.Cog):
 
             elif elm.setting == "archive_category":
                 archive += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
+            elif elm.setting == "prefix":
+                prefix += f"`{elm.value}` example `{elm.value}help`\n"
 
         emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
                                 value=f"‌\n"
                                       f"{pub}\n"
                                       f"{priv}\n"
                                       f"{archive}\n"
-                                      f"{log}")
+                                      f"{log}\n"
+                                      f"{prefix}")
         await ctx.send(embed=emby)
 
     @commands.command(name="delete-setting", aliases=["ds"],
