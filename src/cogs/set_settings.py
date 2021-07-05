@@ -9,6 +9,15 @@ import database.access_settings_db as settings_db
 import database.access_channels_db as channels_db
 import utils as utils
 
+# possible settings switch - returns same value but nothing if key isn't valid
+settings = {
+    "archive": "archive_category",
+    "achive": "archive_category",
+    "arch": "archive_category",
+    "log": "log_channel",
+    "prefix": "prefix",
+}
+
 
 class Settings(commands.Cog):
     """
@@ -258,6 +267,36 @@ class Settings(commands.Cog):
                                 footer="Note that this setting has no affect on private channels")
         await ctx.send(embed=emby)
 
+    @staticmethod
+    async def channel_from_input(ctx, channel_type: str, channel_id: str) -> Union[Tuple[str, str], Tuple[None, None]]:
+        """
+        Get the channel for a given channel id, send error message if no channel was found\n
+        - checks if channel exists\n
+        - checks if type matches the given setting\n
+        
+        :param ctx: discord.Context to send possible help message and to extract guild id
+        :param channel_type: channel type searched, like log_channel. Matched with names from settings dict
+        :param channel_id: channel id that was given
+
+        :returns: (channel id as string, best way to mention / name channel) if found, else (None, None)
+        """
+
+        set_channel = utils.get_chan(ctx.guild, channel_id)
+
+        # check if channel type and wanted setting match
+        if type(set_channel) == discord.TextChannel and channel_type == "log_channel":
+            return str(set_channel.id), set_channel.mention
+
+        elif type(set_channel) == discord.CategoryChannel and channel_type == "archive_category":
+            return str(set_channel.id), set_channel.name
+
+        await ctx.send(embed=utils.make_embed(name="No valid channel id",
+                                              value="I can't find a channel / category that matches your input.\n"
+                                                    "Please make sure that I can see the channel "
+                                                    "and that the given id is valid.",
+                                              color=utils.orange))
+
+        return None, None
     @commands.command(
         name="set", aliases=["sa", "sl", "archive", "log"],
         help=f"Change settings for:\n\n"
@@ -292,32 +331,21 @@ class Settings(commands.Cog):
 
             return
 
-        # possible settings switch - returns same value but nothing if key isn't valid
-        settings = {
-            "archive": "archive_category",
-            "achive": "archive_category",
-            "arch": "archive_category",
-            "log": "log_channel"
-        }
-
-        set_channel = utils.get_chan(ctx.guild, value)
 
         # trying to get a corresponding channel / id
         setting_type = settings[setting]
 
-        # if value is "None" this means that there is no such setting or no such value for it
-        # checking if keyword matches the entered channel type
-        # -> ensures that the process of getting a correct setting has worked
 
-        text = ""
-        if type(set_channel) == discord.TextChannel and setting_type == "log_channel":
-            text = "log channel"
+        # setting is validated, let's see if the value matches the required setting
+        value = value.strip()  # just in case
+        set_value, set_name = None, None
+        if setting_type in ['archive_category', 'log_channel']:
+            # trying to get a corresponding channel (id: str, name/ mention: str)
+            set_value, set_name = await self.channel_from_input(ctx, setting_type, value)
 
-        elif type(set_channel) == discord.CategoryChannel and setting_type == "archive_category":
-            text = "archive category"
 
-        # set channels
-        if text:
+        # make database entry
+        if set_value:
 
             # check if not none
             session = db_models.open_session()
@@ -325,12 +353,12 @@ class Settings(commands.Cog):
 
             if entry:
                 # TODO: SEND REPLY
-                entry.value = setting_type
+                entry.value = set_value
                 session.add(entry)
                 session.commit()
 
-                await ctx.send(embed=utils.make_embed(name=f"Updated setting: {text}",
-                                                      value=f"Set to {set_channel.name}",
+                await ctx.send(embed=utils.make_embed(name=f"Updated setting: {nice_string}",
+                                                      value=f"Set to {set_name}",
                                                       color=utils.green))
 
                 return
@@ -338,11 +366,11 @@ class Settings(commands.Cog):
             settings_db.add_setting(
                 guild_id=ctx.guild.id,
                 setting=setting_type,
-                value=set_channel.id,
+                value=set_value,
                 set_by=f"{ctx.author.id}"
             )
-            await ctx.send(embed=utils.make_embed(name=f"Added setting: {text}",
-                                                  value=f"Set to {set_channel.name}",
+            await ctx.send(embed=utils.make_embed(name=f"Added setting: {nice_string}",
+                                                  value=f"Set to {set_name}",
                                                   color=utils.green))
 
 
