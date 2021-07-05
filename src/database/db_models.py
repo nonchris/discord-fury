@@ -59,8 +59,14 @@ class Settings(Base):
     set_date = Column(DateTime)     # date the setting was altered the last time
 
     def __repr__(self):
-        return f"<Setting: guild='{self.guild_id}', channel_id='{self.applied_to_channel_id}' setting='{self.setting}'," \
-               f"value='{self.value}', set_by='{self.set_by}', set_date='{self.set_date}', is_active='{self.is_active}'>"
+        return f"<Setting: id='{self.id}', " \
+               f"guild='{self.guild_id}', " \
+               f"channel_id='{self.applied_to_channel_id}' " \
+               f"setting='{self.setting}'," \
+               f"value='{self.value}', " \
+               f"set_by='{self.set_by}', " \
+               f"set_date='{self.set_date}', " \
+               f"is_active='{self.is_active}'>"
 
 
 class CreatedChannels(Base):
