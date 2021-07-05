@@ -265,6 +265,22 @@ class Settings(commands.Cog):
                                 footer="Note that this setting has no affect on private channels")
         await ctx.send(embed=emby)
 
+
+    @staticmethod
+    async def validate_channel(ctx: commands.Context, channel_id: str):
+
+        set_channel = utils.get_chan(ctx.guild, channel_id)
+
+        if set_channel is None:
+            await ctx.send(embed=utils.make_embed(name="No valid channel id",
+                                                  value="I can't find a channel / category that matches your input.\n"
+                                                        "Please make sure that I can see the channel "
+                                                        "and that the given id is valid.",
+                                                  color=utils.orange))
+
+        return set_channel
+
+
     @staticmethod
     async def channel_from_input(ctx, channel_type: str, channel_id: str) -> Union[Tuple[str, str], Tuple[None, None]]:
         """
@@ -278,8 +294,10 @@ class Settings(commands.Cog):
 
         :returns: (channel id as string, best way to mention / name channel) if found, else (None, None)
         """
+        set_channel = await Settings.validate_channel(ctx, channel_id)
 
-        set_channel = utils.get_chan(ctx.guild, channel_id)
+        if set_channel is None:
+            return None, None
 
         # check if channel type and wanted setting match
         if type(set_channel) == discord.TextChannel and channel_type == "log_channel":
@@ -287,14 +305,6 @@ class Settings(commands.Cog):
 
         elif type(set_channel) == discord.CategoryChannel and channel_type == "archive_category":
             return str(set_channel.id), set_channel.name
-
-        await ctx.send(embed=utils.make_embed(name="No valid channel id",
-                                              value="I can't find a channel / category that matches your input.\n"
-                                                    "Please make sure that I can see the channel "
-                                                    "and that the given id is valid.",
-                                              color=utils.orange))
-
-        return None, None
 
     @staticmethod
     async def prefix_validation(ctx: commands.Context, new_prefix: str) -> Union[Tuple[str, str], Tuple[None, None]]:
