@@ -391,20 +391,29 @@ class Settings(commands.Cog):
              f"Aliases: `archive`, `log`, `sa`, `sl`\n\n"
              "This option is admin only")
     @commands.has_permissions(administrator=True)
-    async def set_setting(self, ctx: commands.Context, setting: str, value: str):
+    async def set_setting(self, ctx: commands.Context, *params):
+        # first param setting name, second param setting value
+        syntax = "Example: `set [setting name] [setting value]`"
+        try:
+            setting = params[0]
 
-        if not setting:
-            msg = ("Please ensure that you've entered a valid setting \
-                                and channel-id or role-id for that setting.")
-            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+        except IndexError:
+
+            msg = (f"Please ensure that you've entered a valid setting \
+                                and channel-id or role-id for that setting.\n{syntax}")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting name", value=msg)
             await ctx.send(embed=emby)
 
             return
 
-        if not value:
-            msg = ("Please ensure that you've entered a valid setting \
-                                            and channel-id or role-id for that setting.")
-            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get setting", value=msg)
+        try:
+            value = params[1]
+
+        except IndexError:
+
+            msg = (f"Please ensure that you've entered a valid \
+            channel-id / role-id or other required parameter for that setting.\n{syntax}")
+            emby = utils.make_embed(color=discord.Color.orange(), name="Can't get value", value=msg)
             await ctx.send(embed=emby)
 
             return
