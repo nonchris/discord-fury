@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import Union, Tuple
 
 import discord
@@ -9,6 +10,8 @@ import database.db_models as db_models
 import database.access_settings_db as settings_db
 import database.access_channels_db as channels_db
 import utils as utils
+
+logger = logging.getLogger("my-bot")
 
 # possible settings switch - returns same value but nothing if key isn't valid
 # used to verify that input is correct and to make sure that we always handle the same name internally
@@ -50,9 +53,15 @@ class Settings(commands.Cog):
         """
 
         tracked_channels = []
+
         # conversion to set since some keys appear multiple times due to aliases
+
+        # create session externally to remove flawed entries
+        # this should never happen, except during development.
+        # But we can prevent crashes due to unexpected circumstances
+        session = db_models.open_session()
         for setting in set(settings.values()):
-            entries = settings_db.get_all_settings_for(ctx.guild.id, setting)
+            entries = settings_db.get_all_settings_for(ctx.guild.id, setting, session=session)
             if entries:
                 tracked_channels.extend(entries)
 
@@ -69,6 +78,13 @@ class Settings(commands.Cog):
             return
 
         for i, elm in enumerate(tracked_channels):  # building strings
+            # security check to prevent the command from crashing
+            # if an entry has a NoneType value it's useless an can be deleted
+            if elm.setting is None or elm.value is None:
+                session.delete(elm)
+                logger.warning(f"Deleting setting, because containing NoneType values:\n{elm}")
+                continue
+
             if elm.setting == "public_channel":
                 pub += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
 
@@ -82,6 +98,8 @@ class Settings(commands.Cog):
                 archive += f"`{ctx.guild.get_channel(int(elm.value))}` with ID `{elm.value}`\n"
             elif elm.setting == "prefix":
                 prefix += f"`{elm.value}` example `{elm.value}help`\n"
+
+        session.commit()  # delete all flawed entries
 
         emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
                                 value=f"‌\n"
