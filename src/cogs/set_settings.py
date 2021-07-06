@@ -32,7 +32,22 @@ settings = {
     "private-channel": "private_channel",
     "priv": "private_channel",
     "private": "private_channel",
+
+    "allow-edit": "allow_public_rename",
+    "ae": "allow_public_rename",
+    "edit": "allow_public_rename"
 }
+
+
+yes_no_dict = {'yes': 1,
+                "1": 1,
+                "true": 1,
+                "allow": 1,
+                'no': 0,
+                "false": 0,
+                "0": 0,
+                "disable": 0,
+               }
 
 
 class Settings(commands.Cog):
@@ -165,51 +180,6 @@ class Settings(commands.Cog):
                                               value=f"Removed "
                                                     f"`{channel.name if channel else setting_setting}` from settings"))
 
-    # command to set-edit-vc permissions
-    @commands.command(name='allow-edit', aliases=['al', 'ae'],
-                      help=f'Change whether the name of created public channels can be edited by the channel creator.\n'
-                           'Arguments: [_yes_ | _no_]\n'
-                           'Default is _no_\n'
-                           f"Aliases: `al`, `as`\n\n"
-                           f"This command is admin only.")
-    @commands.has_permissions(administrator=True)
-    async def edit_channel(self, ctx, value: str):
-        settings = {'yes': 1,
-                    'no': 0}
-
-        yes_or_no = settings[value.lower()]
-        if not yes_or_no:
-            emby = utils.make_embed(color=discord.Color.orange(),
-                                    name="Missing argument",
-                                    value=f"Please enter `yes` or `no` as argument.")
-            await ctx.send(embed=emby)
-            return
-
-        session = db_models.open_session()
-        entry = settings_db.get_first_setting_for(ctx.guild.id, "allow_public_rename", session=session)
-
-        # edit entry if exists
-        if entry:
-            entry.value = str(yes_or_no)
-            entry.is_active = True  # set to true because it should be active if changed
-            session.add(entry)
-            session.commit()
-
-        else:
-            settings_db.add_setting(
-                guild_id=ctx.guild.id,
-                setting="allow_public_rename",
-                value=str(yes_or_no),
-                set_by=str(ctx.author.id)
-            )
-
-        emby = utils.make_embed(color=utils.green,
-                                name="Success",
-                                value=f'The channel creator {"can" if yes_or_no else "can _not_"} '
-                                      f'edit the name of a created public channel\n',
-                                footer="Note that this setting has no affect on private channels")
-        await ctx.send(embed=emby)
-
     @staticmethod
     async def validate_channel(ctx: commands.Context, channel_id: str):
 
@@ -303,6 +273,35 @@ class Settings(commands.Cog):
         return None, None
 
     @staticmethod
+    async def validate_toggle(ctx: commands.Context, decision: str) -> Union[Tuple[str, str], Tuple[None, None]]:
+        """
+        Check if value matches yes_or_no toggle dict\n
+        Send error if mapping doesn't work
+
+
+        :param ctx: context of the command, used to send a possible message
+        :param decision: 'boolean' input of the user to map to True or False
+
+        :returns: ('1' or '0', descriptive string if user can or can't edit) if its valid, else (None, None)
+        """
+        yes_or_no = yes_no_dict.get(decision, None)
+        if yes_or_no is not None:
+            return str(yes_or_no), "creator can edit" if yes_or_no else " creator can _not_ edit"
+
+        await ctx.send(embed=utils.make_embed(
+            name="Can't extract your decision",
+            value="You needed to either enter `yes` or `no` as valid state.\n"
+                  "I can' figure out whether you want to allow or disable "
+                  "that the channel creator can edit the created channel.\n"
+                  "Use `yes` to allow it or `no` to prohibit.",
+            color=utils.yellow,
+            footer="It's only recommend to enable that feature if you trust your members "
+                   "and / or have an active moderation team!"
+        ))
+
+        return None, None
+
+    @staticmethod
     async def send_setting_updated(ctx: commands.Context, setting_name: str, value_name: str):
         """
         Send a message that the setting was updated
@@ -350,11 +349,11 @@ class Settings(commands.Cog):
         entry = settings_db.get_first_setting_for(ctx.guild.id, setting_name, session=session)
 
         if entry:
-            # TODO: SEND REPLY
             entry.value = set_value
             session.add(entry)
             session.commit()
 
+            # send reply
             await Settings.send_setting_updated(ctx, setting_name, value_name)
 
             return
@@ -365,10 +364,14 @@ class Settings(commands.Cog):
             value=set_value,
             set_by=f"{ctx.author.id}"
         )
+
+        # send reply
         await Settings.send_setting_added(ctx, setting_name, value_name)
 
     @commands.command(
-        name="set", aliases=["sa", "sl", "archive", "log", "add", "svc", "set-voice", "set-voice-channel"],
+        name="set",
+        aliases=["sa", "sl", "archive", "log", "add",
+                 "svc", "set-voice", "set-voice-channel", 'allow-edit', 'al', 'ae'],
         help=f"__**Configure Voice Channel behaviour**__:\n"
              f"Register a voice channel that members can join to get an own channel\n\n"
              "__Usage:__\n"
@@ -387,8 +390,12 @@ class Settings(commands.Cog):
              f"`{PREFIX}set` [_prefix_] [_new-prefix_]\n\n"
              "Note that text-channels will only be archived when they contain at least one message, "
              "they'll be deleted otherwise.\n\n"
-             "Your setting will be updated if you already set a log / archive.\n\n"
-             f"Aliases: `archive`, `log`, `sa`, `sl`\n\n"
+             f"__**Allow creator to edit the name of a public channel**__"
+             f'`{PREFIX}`set [allow-edit | ae] [_yes_ | _no_]\n'
+             f'This will only apply to public channels! - Private ones can always be edited.\n'
+             f'Default is _no_\n\n'
+             "Your setting will be updated if you already set it earlier.\n\n"
+             f"Aliases: `add`, `svc`, `sa`, `sl`\n\n"
              "This option is admin only")
     @commands.has_permissions(administrator=True)
     async def set_setting(self, ctx: commands.Context, *params):
@@ -441,8 +448,12 @@ class Settings(commands.Cog):
             # need to await since it sends the error message if we can't match
             set_value, set_name = await self.prefix_validation(ctx, value)
 
+        elif setting_type == "allow_public_rename":
+            set_value, set_name = await self.validate_toggle(ctx, value)
+
         # enter to database if value is correct
         if set_value:
+            print(f"{set_value=}")
             await self.update_value_or_create_entry(ctx, setting_type, set_value, set_name)
             return  # we're done - the other handling isn't needed
 
@@ -468,6 +479,8 @@ class Settings(commands.Cog):
 
                 session.add(entry)
                 session.commit()
+
+                # send reply
                 await self.send_setting_updated(ctx, setting_type, set_name)
                 return
 
@@ -480,6 +493,8 @@ class Settings(commands.Cog):
                     value=set_value,
                     set_by=ctx.author.id,
                 )
+
+                # send reply
                 await self.send_setting_updated(ctx, setting_type, set_name)
                 return
 
