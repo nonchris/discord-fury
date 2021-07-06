@@ -40,85 +40,6 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(
-        name="add", aliases=["svc", "set-voice", "set-voice-channel"],
-        help=f"Register a voice channel that members can join to get an own channel\n\n"
-        "__Usage:__\n"
-        f"`{PREFIX}add` [_public_ | _private_] [_channel-id_]\n\n"
-        "_public_ or _private_ is the option for the channel-type that is created when joining the tracked-channel.\n"
-        "This option is - obviously - admin only\n\n"
-        f"Aliases: `{PREFIX}svc` `{PREFIX}set-voice [channel type] [channel id]`")
-    @commands.has_permissions(administrator=True)
-    async def set_voice(self, ctx: commands.Context, setting: str, value: str):
-        """
-        Add a voice channel setting to the database
-        :param ctx: command context
-        :param setting: setting to be added like 'public'
-        :param value: id or mention the channel to be entered into the database
-        """
-
-        # trying to get a corresponding channel / id
-        setting = settings[setting]
-        channel = utils.get_chan(ctx.guild, value)
-
-        # if channel is "None" this means that there is no such setting or no such channel for it
-        # -> ensures that the process of getting a correct setting has worked
-        if channel is None:
-            emby = utils.make_embed(
-                color=discord.Color.orange(),
-                name="Can't get setting",
-                value="Please ensure that you've entered a valid setting and channel-id for that setting.")
-            await ctx.send(embed=emby)
-            return
-
-        # if channel type is not voice channel
-        if type(channel) is not discord.VoiceChannel:
-            embed = utils.make_embed(
-                name='Not a voice channel',
-                value=f"The channel {channel.name} is no voice channel, please enter a valid channel-id",
-                color=utils.yellow
-            )
-            await ctx.send(embed=embed)
-            return
-
-        # Settings won't be stored if max watched channels are reached
-        # -> searching for amount of matching entries
-        entries = settings_db.get_all_settings_for(ctx.guild.id, setting)
-        if entries and len(entries) >= CHANNEL_TRACK_LIMIT:
-            emby = utils.make_embed(
-                color=utils.orange, name="Too many entries",
-                value=f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels for this setting\n"
-                      f"If you wanna change the channels I watch use `{PREFIX}ds [channel-id]` "
-                      f"to remove a channel from your settings")
-
-            await ctx.send(embed=emby)
-            return
-
-        # check if channel was already given to track
-        session = db_models.open_session()
-        entry: Union[db_models.Settings, None] = settings_db.get_setting_by_value(ctx.guild.id, channel.id, session)
-
-        # if channel is already registered - update
-        if entry:
-            entry.setting = setting
-
-            session.add(entry)
-            session.commit()
-
-        # create new entry, channel not tracked yet
-        else:
-            # write entry to db
-            settings_db.add_setting(
-                guild_id=ctx.guild.id,
-                setting=setting,
-                value=channel.id,
-                set_by=ctx.author.id,
-            )
-
-        emby = utils.make_embed(
-            color=utils.green, name="Success", value=f"Set {channel.name} as {setting.replace('_', ' ')}")
-        await ctx.send(embed=emby)
-
     @commands.command(name="settings", aliases=["gs", "get-settings"],
                       help=f"Get a list of all 'watched' channels as well as all other settings\n\n"
                            f"Aliases: `gs`, `get-settings` ")
@@ -271,7 +192,6 @@ class Settings(commands.Cog):
                                 footer="Note that this setting has no affect on private channels")
         await ctx.send(embed=emby)
 
-
     @staticmethod
     async def validate_channel(ctx: commands.Context, channel_id: str):
 
@@ -285,7 +205,6 @@ class Settings(commands.Cog):
                                                   color=utils.orange))
 
         return set_channel
-
 
     @staticmethod
     async def channel_from_input(ctx, channel_type: str, channel_id: str) -> Union[Tuple[str, str], Tuple[None, None]]:
@@ -311,6 +230,30 @@ class Settings(commands.Cog):
 
         elif type(set_channel) == discord.CategoryChannel and channel_type == "archive_category":
             return str(set_channel.id), set_channel.name
+
+        elif type(set_channel) == discord.VoiceChannel and channel_type in ['public_channel', 'private_channel']:
+
+            # check if max for tracked channels is reached
+            if not settings_db.is_track_limit_reached(ctx.guild.id, channel_type):
+                return str(set_channel.id), set_channel.name
+
+            await ctx.send(embed=utils.make_embed(
+                color=utils.orange, name="Too many entries",
+                value=f"Hey, you can't make me watch more than {CHANNEL_TRACK_LIMIT} channels for this setting\n"
+                      f"If you wanna change the channels I watch use `{PREFIX}ds [channel-id]` "
+                      f"to remove a channel from your settings"))
+            return None, None
+
+        else:
+            # gained channel and required type didn't match
+            await ctx.send(embed=utils.make_embed(
+                name='Not a voice channel',
+                value=f"The channel {set_channel.name} is no {channel_type.replace('_', ' ')}, "
+                      f"please enter a valid channel-id",
+                color=utils.yellow
+            ))
+
+        return None, None
 
     @staticmethod
     async def prefix_validation(ctx: commands.Context, new_prefix: str) -> Union[Tuple[str, str], Tuple[None, None]]:
@@ -341,9 +284,80 @@ class Settings(commands.Cog):
             color=utils.yellow))
         return None, None
 
+    @staticmethod
+    async def send_setting_updated(ctx: commands.Context, setting_name: str, value_name: str):
+        """
+        Send a message that the setting was updated
+
+        :param ctx: command context
+        :param setting_name: name of the setting like, 'private_channel'
+        :param value_name: name the set value should have in bot message
+        """
+        nice_string = setting_name.replace('_', ' ')
+        await ctx.send(embed=utils.make_embed(name=f"_Updated_ setting: {nice_string}",
+                                              value=f"Set to {value_name}",
+                                              color=utils.green))
+
+    @staticmethod
+    async def send_setting_added(ctx: commands.Context, setting_name: str, value_name: str):
+        """
+        Send a message that the setting as created
+
+        :param ctx: command context
+        :param setting_name: name of the setting, like 'private_channel'
+        :param value_name: name the set value should have in bot message
+        """
+        nice_string = setting_name.replace('_', ' ')
+        await ctx.send(embed=utils.make_embed(name=f"Added setting: {nice_string}",
+                                              value=f"Set to {value_name}",
+                                              color=utils.green))
+
+    @staticmethod
+    async def update_value_or_create_entry(ctx: commands.Context, setting_name: str, set_value: str, value_name: str):
+        """
+        Check if an entry exists based on setting name, alter its value\n
+        Create a new entry if no setting was found\n
+        -> If there is a setting with the name 'prefix' update setting.value = new_prefix\n
+        Send update messages on discord
+
+        :param ctx: command context
+        :param setting_name: name of the setting
+        :param set_value: value the setting shall be set to
+        :param value_name: name the set value should have in bot message
+
+        """
+        # check if there is an entry for that setting - toggle it
+        session = db_models.open_session()
+
+        entry = settings_db.get_first_setting_for(ctx.guild.id, setting_name, session=session)
+
+        if entry:
+            # TODO: SEND REPLY
+            entry.value = set_value
+            session.add(entry)
+            session.commit()
+
+            await Settings.send_setting_updated(ctx, setting_name, value_name)
+
+            return
+
+        settings_db.add_setting(
+            guild_id=ctx.guild.id,
+            setting=setting_name,
+            value=set_value,
+            set_by=f"{ctx.author.id}"
+        )
+        await Settings.send_setting_added(ctx, setting_name, value_name)
+
     @commands.command(
-        name="set", aliases=["sa", "sl", "archive", "log"],
-        help=f"Change settings for:\n\n"
+        name="set", aliases=["sa", "sl", "archive", "log", "add", "svc", "set-voice", "set-voice-channel"],
+        help=f"__**Configure Voice Channel behaviour**__:\n"
+             f"Register a voice channel that members can join to get an own channel\n\n"
+             "__Usage:__\n"
+             f"`{PREFIX}set` [_public_ | _private_] [_channel-id_]\n\n"
+             "_public_ or _private_ is the option for the channel-type that's created when joining the channel.\n\n"
+             f""
+             f"__**Other  settings:**__\n\n"
              f"__log:__\n"
              f"Channel for log messages\n"
              f"__archive:__\n"
@@ -380,7 +394,6 @@ class Settings(commands.Cog):
         # look if setting name is valid
         setting = setting.lower()  # dict only handles lower case, so do we all the time
         setting_type = settings.get(setting, None)
-        nice_string = setting_type.replace('_', ' ')
 
         if not setting_type:
             await ctx.send(embed=utils.make_embed(name=f"'{setting}' is no valid setting name",
@@ -391,42 +404,57 @@ class Settings(commands.Cog):
         # setting is validated, let's see if the value matches the required setting
         value = value.strip()  # just in case
         set_value, set_name = None, None
+
+        # first check 'easy' cases
         if setting_type in ['archive_category', 'log_channel']:
             # trying to get a corresponding channel (id: str, name/ mention: str)
             set_value, set_name = await self.channel_from_input(ctx, setting_type, value)
 
-        if setting_type == "prefix":
+        elif setting_type == "prefix":
             # need to await since it sends the error message if we can't match
             set_value, set_name = await self.prefix_validation(ctx, value)
 
-        # make database entry
+        # enter to database if value is correct
         if set_value:
+            await self.update_value_or_create_entry(ctx, setting_type, set_value, set_name)
+            return  # we're done - the other handling isn't needed
 
-            # check if there is an entry for that setting - toggle it
+        # now handle tracked channels
+        # tracked channels require an other database handling as the other settings
+        # we need to check if there is a setting with that value and adjust the setting_name
+        # in all other cases it's we check the settings name and alter the value...
+        # e.g. if there is a setting for setting.value == channel_id change setting.name to channel_type
+        if setting_type in ['public_channel', 'private_channel']:
+            # trying to get a corresponding channel (id: str, name/ mention: str)
+            set_value, set_name = await self.channel_from_input(ctx, setting_type, value)
+
             session = db_models.open_session()
-            entry = settings_db.get_first_setting_for(ctx.guild.id, setting_type, session=session)
+            entry: Union[db_models.Settings, None] = settings_db.get_setting_by_value(ctx.guild.id, set_value, session)
 
-            if entry:
-                # TODO: SEND REPLY
-                entry.value = set_value
-                session.add(entry)
-                session.commit()
-
-                await ctx.send(embed=utils.make_embed(name=f"Updated setting: {nice_string}",
-                                                      value=f"Set to {set_name}",
-                                                      color=utils.green))
-
+            # given channel id seems flawed - returning
+            if not set_value:
                 return
 
-            settings_db.add_setting(
-                guild_id=ctx.guild.id,
-                setting=setting_type,
-                value=set_value,
-                set_by=f"{ctx.author.id}"
-            )
-            await ctx.send(embed=utils.make_embed(name=f"Added setting: {nice_string}",
-                                                  value=f"Set to {set_name}",
-                                                  color=utils.green))
+            # if channel is already registered - update
+            if entry:
+                entry.setting = setting_type
+
+                session.add(entry)
+                session.commit()
+                await self.send_setting_updated(ctx, setting_type, set_name)
+                return
+
+            # create new entry, channel not tracked yet
+            else:
+                # write entry to db
+                settings_db.add_setting(
+                    guild_id=ctx.guild.id,
+                    setting=setting_type,
+                    value=set_value,
+                    set_by=ctx.author.id,
+                )
+                await self.send_setting_updated(ctx, setting_type, set_name)
+                return
 
 
 def setup(bot):
