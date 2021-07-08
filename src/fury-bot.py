@@ -66,14 +66,39 @@ async def on_command_error(ctx, error):
     Overwriting command error handler from discord.py
     """
     if isinstance(error, commands.errors.CheckFailure):
-        await ctx.send('You can\'t do that. Pleases ask an Admin')
+        await ctx.send(embed=utils.make_embed(
+            name="Permission error",
+            value=f"{error}\n"
+                  f"Please ask an admin for help.",
+            color=utils.orange,
+            footer="Is this an error? Please report it under github.com/nonchris/discord-fury/issues"
+        ))
+        logger.info(f"There was an permission error calling '{ctx.command.qualified_name}'")
 
     elif isinstance(error, commands.errors.CommandNotFound):
-        await utils.send_embed(ctx,
-                               utils.make_embed(name="I'm sorry, I don't know this command", value=f'`{error}`',
-                                                color=discord.Color.orange()))
+        await ctx.send(embed=utils.make_embed(
+            name="I'm sorry :sweat_smile:",
+            value=f'`{error}`',
+            color=discord.Color.orange()
+        ))
+        logger.warning(f"{error}")
 
-    logger.warning(f"Command tried: {error}")
+    elif isinstance(error, commands.CommandInvokeError):
+        original = error.original
+        if not isinstance(original, discord.HTTPException):
+            traceback.print_tb(original.__traceback__)
+            logger.warning(f'In {ctx.command.qualified_name}:\n'
+                           f'{original.__class__.__name__}: {original}')
+        else:
+            logger.info(f"HTTPException occurred:\n{error}")
+
+    elif isinstance(error, commands.ArgumentParsingError):
+        logger.warning(f"{error}")
+        await ctx.send(embed=utils.make_embed(
+            name="There was an error with your input",
+            value=error,
+            color=utils.yellow
+        ))
 
 
 # TODO recreate 'normal' print stack-trace... disable custom handling until then
