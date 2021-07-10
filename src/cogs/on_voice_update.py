@@ -83,7 +83,7 @@ async def create_new_channels(member: discord.Member,
     """
 
     # check if creator is allowed to rename a public channel
-    allowed_to_edit = settings_db.get_all_settings_for(member.guild.id, "edit_public")
+    allowed_to_edit = settings_db.get_first_setting_for(member.guild.id, "allow_public_rename")
 
     # get channel names from dict above
     new_channel_name = random.choice(channel_names[channel_type])
@@ -105,7 +105,7 @@ async def create_new_channels(member: discord.Member,
         }
 
     # set extra permissions for creator if creators are allowed to edit public channels on this server
-    elif allowed_to_edit:
+    elif allowed_to_edit and int(allowed_to_edit.value):
         voice_channel_permissions[member] = discord.PermissionOverwrite(connect=True,
                                                                         manage_channels=True)
 

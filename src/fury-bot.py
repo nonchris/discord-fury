@@ -10,6 +10,8 @@ from discord.ext import commands
 import log_setup
 from environment import PREFIX, TOKEN
 import utils
+import database.db_models as db
+import database.access_settings_db as settings_db
 
 logger = logging.getLogger("my-bot")
 
@@ -17,9 +19,26 @@ intents = discord.Intents.all()
 # intents.presences = True
 
 
+# inspired by https://github.com/Rapptz/RoboDanny
+def _prefix_callable(_bot: commands.Bot, msg: discord.Message):
+    user_id = _bot.user.id
+    base = [f'<@!{user_id}> ', f'<@{user_id}> ']
+    if msg.guild is None:  # we're in DMs
+        base.append(PREFIX)
+        return base
+
+    # look if there are custom prefix settings here
+    entries = settings_db.get_all_settings_for(msg.guild.id, "prefix")
+    if entries is not None:
+        prefixes = [entry.value for entry in entries]
+        base.extend(prefixes)
+    else:  # nope boring, using standard prefix
+        base.append(PREFIX)
+    return base
+
+
 # setting prefix and defining bot
-bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-client = discord.Client()  # defining client
+bot = commands.Bot(command_prefix=_prefix_callable, intents=intents)
 
 
 # game = discord.Game('Waiting')
@@ -46,16 +65,40 @@ async def on_command_error(ctx, error):
     """
     Overwriting command error handler from discord.py
     """
-    print(error)
     if isinstance(error, commands.errors.CheckFailure):
-        await ctx.send('You can\'t do that. Pleases ask an Admin')
+        await ctx.send(embed=utils.make_embed(
+            name="Permission error",
+            value=f"{error}\n"
+                  f"Please ask an admin for help.",
+            color=utils.orange,
+            footer="Is this an error? Please report it under github.com/nonchris/discord-fury/issues"
+        ))
+        logger.info(f"There was an permission error calling '{ctx.command.qualified_name}'")
 
     elif isinstance(error, commands.errors.CommandNotFound):
-        await utils.send_embed(ctx,
-                               utils.make_embed(name="I'm sorry, I don't know this command", value=f'`{error}`',
-                                                color=discord.Color.orange()))
+        await ctx.send(embed=utils.make_embed(
+            name="I'm sorry :sweat_smile:",
+            value=f'`{error}`',
+            color=discord.Color.orange()
+        ))
+        logger.warning(f"{error}")
 
-    logger.warning(f"Command tried: {error}")
+    elif isinstance(error, commands.CommandInvokeError):
+        original = error.original
+        if not isinstance(original, discord.HTTPException):
+            traceback.print_tb(original.__traceback__)
+            logger.warning(f'In {ctx.command.qualified_name}:\n'
+                           f'{original.__class__.__name__}: {original}')
+        else:
+            logger.info(f"HTTPException occurred:\n{error}")
+
+    elif isinstance(error, commands.ArgumentParsingError):
+        logger.warning(f"{error}")
+        await ctx.send(embed=utils.make_embed(
+            name="There was an error with your input",
+            value=error,
+            color=utils.yellow
+        ))
 
 
 # TODO recreate 'normal' print stack-trace... disable custom handling until then
