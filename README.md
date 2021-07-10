@@ -2,7 +2,11 @@
 * Create custom voice channels with linked text channels on demand.  
 * Add breakout rooms for discord
 
-## Commands channels and breakout rooms:
+## Commands channels and breakout rooms
+Default prefix is `f!`  
+The bot also listens for mentions, so `@[bot] help` is also a valid command.  
+Note that the default prefix can be changed on a guild since `v2.0.1`  
+
 | Command | Description | Alternative |  
 | ------ |   ------ | ------- | 
 | `f!help [optional: module name]` | Shows the help message with all modules / for entered module | `f!h` |
@@ -12,16 +16,32 @@
 | `f!add [public / private] [channel id]` | Register a voice channel as tracked creation channel | `svc`, `set-voice`|
 
 ## Settings
-| Command | Description | Alternative |  
-| ------ |   ------ | ------- | 
-| `f!set [log channel / archive category] [channel]` | Add setting for archive category and log channel | `archive`, `log` |
-| `f!set prefix [prefix]` | Use custom prefix on your server | same as above |
-| `f!delete-settings [channel id]` | Removes a channel from the tracked list | `ds` |
-| `f!settings` | Get a list of all configured settings | `gs`, `get-settings` |
-| `f!allow-edit [yes / no]` | Allow the creator of a public channel to edit the name, default is no | `al`, `ae` |
-| `f!ping` | Check if the bot is available | |
-The bot also listens for mentions, so `@bot help` is also a valid command.  
-Not that the default prefix can be changed on a guild since `v2.0.1`
+Syntax for the following commands is `f!set [name] [value]`  
+
+| Name | Value | Description | Entry limit |  
+| ------ | ------ | ------- | ------ |  
+| `public` | `voice-channel-id` | Track a channel for the creation of public channels   | 3 |  
+| `private` | `voice-channel-id` | Track a channel for the creation of private channels   | 3 |  
+| `archive` | `category-id` | Add setting for archive category and log channel | 1 |  
+| `log` | `text-channel-id` | Add setting for archive category and log channel | 1 |  
+| `prefix` | New Prefix | Use custom prefix on your server | 1 |  
+| `allow-edit` | `yes` or `no` | Allow the creator of a public channel to edit the name, default is no | 1 |  
+
+If a setting is already set it will be updated to the new value.  
+
+### Delete a setting
+Syntax for the following commands is   
+
+`f!ds [name] [value]`  
+
+Delete a tracked channel by giving the channel id.  
+Another setting can be deleted by entering it's setting name, like `f!ds prefix`  
+
+## Other commands
+| Name |  Description | Alternative |  
+| ------ |   ------ | ------- |  
+| `f!settings` | Get a list of all configured settings | `gs`, `get-settings` |  
+| `f!ping` | Check if the bot is available | |  
 
 ## Functions:
 ### Create voice channels on demand
