@@ -23,15 +23,26 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     :param voice_state: To detect which VC the member is in
     :param member: To access guild and give member TC access permissions
     :param bot_member: Bot as member to enable access on all created channels
-    :param voice_overwrites: To give member extra permissions in the VC and TC
+    :param voice_overwrites: To give member extra permissions in the VC and TC (bot permissions will be added / edited)
     :param vc_name: Voice Channel name
     :param tc_name: Text Channel name
     :param channel_type: For SQL-logging can be "public" or "private"
 
     :returns: Created Text and VoiceChannel Objects
     """
-    # creating channels
-    # TODO handle error on creation
+    # TODO handle error on creation - especially admin permission errors
+    # if ctx.me.guild_permissions.administrator...
+    
+    # add bot to voice channel overwrites to ensure that bot can mange the channel
+    bot_overwrites: Union[discord.PermissionOverwrite, None] = voice_overwrites.get(bot_member, None)
+    # check if some configurations for bot were made - update overwrites accordingly
+    if bot_overwrites is not None:
+        bot_overwrites.update(view_channel=True, connect=True)
+    else:
+        voice_overwrites[bot_member] = discord.PermissionOverwrite(view_channel=True, connect=True)
+
+    print(voice_overwrites)
+    # create channels
     v_channel: discord.VoiceChannel = await member.guild.create_voice_channel(
         vc_name, category=voice_state.channel.category, overwrites=voice_overwrites)
 
@@ -274,6 +285,7 @@ class VCCreator(commands.Cog):
                                                 archive=archive_category, log_channel=log_channel)
 
             # channel is a bot created channel - add user to linked text_channel
+            # TODO we can skip this API call when the creator just got moved
             elif created_channel:
                 # update overwrites to add user to joined channel
                 await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
