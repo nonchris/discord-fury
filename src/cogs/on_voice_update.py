@@ -91,8 +91,6 @@ async def create_new_channels(member: discord.Member,
     # default overwrites for new channel
     voice_channel_permissions = after.channel.category.overwrites
 
-    voice_channel_permissions[bot_member] = discord.PermissionOverwrite(view_channel=True)
-
     # overwriting permissions if channel shall be private
     if channel_type == 'private_channel':
 
@@ -108,6 +106,9 @@ async def create_new_channels(member: discord.Member,
     elif allowed_to_edit and int(allowed_to_edit.value):
         voice_channel_permissions[member] = discord.PermissionOverwrite(connect=True,
                                                                         manage_channels=True)
+
+    # add bot to channel so the bot can see and manage this channel without administrator
+    voice_channel_permissions[bot_member] = discord.PermissionOverwrite(view_channel=True, connect=True)
 
     # issue creation of channels
     voice_channel, text_channel = await make_channel(after, member, bot_member, voice_channel_permissions,
