@@ -13,7 +13,7 @@ import utils as utl
 
 
 async def make_channel(voice_state: discord.VoiceState, member: discord.Member, bot_member: discord.Member,
-                       voice_overwrites: discord.PermissionOverwrite,
+                       voice_overwrites: Dict[Union[discord.Member, discord.Role], discord.PermissionOverwrite],
                        vc_name="voice-channel", tc_name="text-channel", channel_type="public") -> Tuple[
                        discord.VoiceChannel, discord.TextChannel]:
     """
@@ -192,11 +192,12 @@ def generate_text_channel_overwrite(
     return {**role_overwrites, **member_overwrites}
 
 
-async def update_channel_overwrites(after_channel: discord.VoiceChannel, created_channel, bot_member: discord.Member):
+async def update_channel_overwrites(after_channel: discord.VoiceChannel,
+                                    created_channel: db.CreatedChannels, bot_member: discord.Member):
     # get new overwrites for text channel
     overwrites = generate_text_channel_overwrite(after_channel, bot_member)
     # get linked text channel
-    linked_channel: discord.VoiceChannel = after_channel.guild.get_channel(created_channel.text_channel_id)
+    linked_channel: discord.TextChannel = after_channel.guild.get_channel(created_channel.text_channel_id)
     # TODO: logging if text channel not exists
     if linked_channel:
         await linked_channel.edit(overwrites=overwrites)
