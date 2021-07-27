@@ -134,7 +134,6 @@ async def delete_text_channel(t_channel: discord.TextChannel, archive=None):
     """
     Checks whether channel shall be archived or deleted and executes that action
     """
-    print(f"{archive=}")
     # if archive is given and channel is not empty: move to archive
     if archive and t_channel.last_message is not None:
         await t_channel.edit(category=archive,
@@ -253,14 +252,11 @@ class VCCreator(commands.Cog):
 
             # check db if channel is a channel that was created by the bot
             created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id)
-            # print(f"{created_channel=}")
 
             # check if joined (after) channel is a channel that triggers a channel creation
             create_channel = settings_db.get_setting_by_value(guild.id, after_channel.id)
-            # print(f"{create_channel=}")
 
             if create_channel:
-                print(f"{create_channel.setting=}")
                 voice_channel, text_channel = await create_new_channels(member, after,
                                                                         create_channel.setting, bot_member_on_guild)
 
