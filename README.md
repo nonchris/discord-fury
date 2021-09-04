@@ -5,9 +5,10 @@
 ### Functions
 #### Create voice channels on demand
 Watches custom configured voice channels and creates a new channel for each user that joins one of those channels._  
-Supports two 'types' of channels:
+Supports three 'types' of channels:
 * public channel - synced with category, everyone has the same permissions  
 * private channel - join is disabled for every member, the creator can edit the whole channel
+* static channel - only a new linked text-channel will be created when a user joins a persistent channel
 This function also creates a 'linked' text channel which is only visible for the users that are currently in that voice chat.
 * The text channel will be removed / archived - according to your settings - when the voice channel is empty and gets deleted.
 
@@ -52,6 +53,7 @@ Syntax for the following commands is `f!set [name] [value]`
 | ------ | ------ | ------- | ------ |  
 | `public` | `voice-channel-id` | Track a channel for the creation of public channels   | 3 |  
 | `private` | `voice-channel-id` | Track a channel for the creation of private channels   | 3 |  
+| `static` | `voice-channel-id` | Create linked text channels for a persistent voice channel   | 3 |  
 | `archive` | `category-id` | Add setting for archive category and log channel | 1 |  
 | `log` | `text-channel-id` | Add setting for archive category and log channel | 1 |  
 | `prefix` | New Prefix | Use custom prefix on your server | 1 |  

@@ -10,6 +10,8 @@ from discord.ext import commands
 # own
 from environment import PREFIX, OWNER_NAME, OWNER_ID
 import utils
+import database.access_settings_db as settings_db
+import database.access_channels_db as channels_db
 
 
 class Admin(commands.Cog):
@@ -22,6 +24,15 @@ class Admin(commands.Cog):
 
     # AIR
     # ORION
+
+    @commands.command("rme", hidden=True)
+    async def rme(self, ctx, arg):
+        """ Remove an entry from db by id """
+        if ctx.author.id != OWNER_ID:
+            return
+        channels_db.del_channel(int(arg))
+        settings_db.del_setting_by_value(ctx.guild.id, int(arg))
+        await ctx.send("Done")
 
     # ROLE ID
     @commands.command(name="role-id", aliases=["roleid", "rid", "r-id"],

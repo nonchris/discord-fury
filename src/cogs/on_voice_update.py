@@ -41,7 +41,6 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     else:
         voice_overwrites[bot_member] = discord.PermissionOverwrite(view_channel=True, connect=True)
 
-    print(voice_overwrites)
     # create channels
     v_channel: discord.VoiceChannel = await member.guild.create_voice_channel(
         vc_name, category=voice_state.channel.category, overwrites=voice_overwrites)
@@ -169,6 +168,7 @@ def generate_text_channel_overwrite(
     Gives read/ write permission to:\n
     - roles that are registered as allowed in the settings
     - members that are currently in the voice channel
+    - the bot member creating that channel
 
     Prohibits guilds default role from accessing the channel
 
@@ -214,6 +214,22 @@ async def update_channel_overwrites(after_channel: discord.VoiceChannel,
         await linked_channel.edit(overwrites=overwrites)
 
 
+async def send_welcome_message(text_channel: discord.TextChannel, linked_vc: discord.VoiceChannel):
+    await text_channel.send(
+        embed=utl.make_embed(
+            name='Welcome to your own private channel!',
+            value=f'Hey, this channel is only visible for people that are in your voice chat:\n'
+                  f'{linked_vc.mention}\n'
+                  "You can use this channel to share conversation related stuff, "
+                  "use bot commands or just for other things.\n"
+                  'Have fun!',
+            footer='Please note that this channel will be removed '
+                   'when everyone has left the affiliated voice channel.',
+            color=utl.green
+        )
+    )
+
+
 class VCCreator(commands.Cog):
     # Codename: PANTHEON
     """
@@ -249,16 +265,16 @@ class VCCreator(commands.Cog):
         # check if member has a voice channel after the state update
         # could trigger the creation of a new channel or require an update for an existing one
         if after_channel:
-
+            session = db.open_session()
             # check db if channel is a channel that was created by the bot
-            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id)
+            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id, session)
 
             # check if joined (after) channel is a channel that triggers a channel creation
-            create_channel = settings_db.get_setting_by_value(guild.id, after_channel.id)
+            tracked_channel = settings_db.get_setting_by_value(guild.id, after_channel.id, session)
 
-            if create_channel:
+            if tracked_channel:
                 voice_channel, text_channel = await create_new_channels(member, after,
-                                                                        create_channel.setting, bot_member_on_guild)
+                                                                        tracked_channel.setting, bot_member_on_guild)
 
                 # write to log channel if configured
                 if log_entry:
@@ -274,21 +290,46 @@ class VCCreator(commands.Cog):
                 # moving creator to created channel
                 try:
                     await member.move_to(voice_channel, reason=f'{member} issued creation')
+                    await send_welcome_message(text_channel, voice_channel)  # send message explaining text channel
+                    
                 # if user already left already
                 except discord.HTTPException as e:
                     print("Handle HTTP exception during creation of channels - channel was already empty")
                     await clean_after_exception(voice_channel, text_channel,
                                                 archive=archive_category, log_channel=log_channel)
 
-            # channel is a bot created channel - add user to linked text_channel
-            # TODO we can skip this API call when the creator just got moved
+            # channel is in our database - add user to linked text_channel
             elif created_channel:
-                # update overwrites to add user to joined channel
-                await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
+
+                # static channels need a new linked text-channel if they were empty before
+                if created_channel.internal_type == 'static_channel' and created_channel.text_channel_id is None:
+
+                    try:
+                        tc_overwrite = generate_text_channel_overwrite(after_channel, self.bot.user)
+                        text_channel = await guild.create_text_channel(after_channel.name,
+                                                                       overwrites=tc_overwrite,
+                                                                       category=after_channel.category,
+                                                                       reason="User joined linked voice channel")
+                        created_channel.text_channel_id = text_channel.id
+                        session.add(created_channel)
+                        session.commit()
+
+                        await send_welcome_message(text_channel, after_channel)  # send message explaining text channel
+
+                    except discord.HTTPException as e:
+                        # TODO: log this
+                        pass
+
+                # processing 'normal', existing linked channel
+                else:
+                    # update overwrites to add user to joined channel
+                    # TODO we can skip this API call when the creator just got moved
+                    await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
 
         if before_channel:
             # check db if before channel is a channel that was created by the bot
-            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(before_channel.id)
+            session = db.open_session()
+            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(before_channel.id, session)
 
             if created_channel:
                 # member left but there are still members in vc
@@ -303,10 +344,13 @@ class VCCreator(commands.Cog):
                     text_channel: Union[discord.TextChannel, None] = guild.get_channel(created_channel.text_channel_id)
 
                     # delete channels - catch AttributeErrors to still do the db access and the logging
-                    try:
-                        await before_channel.delete(reason="Channel is empty")
-                    except AttributeError:
-                        pass
+
+                    # delete VC only if it's not a static_channel
+                    if created_channel.internal_type != 'static_channel':
+                        try:
+                            await before_channel.delete(reason="Channel is empty")
+                        except AttributeError:
+                            pass
 
                     # archive or delete linked text channel
                     try:
@@ -326,17 +370,27 @@ class VCCreator(commands.Cog):
                                 color=utl.red))
 
                     if log_channel:
+                        static = True if created_channel.internal_type == 'static_channel' else False  # helper variable
+
                         await log_channel.send(
                             embed=utl.make_embed(
-                                name=f"Deleted {before_channel.name}",
-                                value=f"The linked text channel {text_channel.mention} was"
+                                name=f"Removed {text_channel.name}" if static else f"Deleted {before_channel.name}",
+                                value=f"{text_channel.mention} was linked to {before_channel.name} and is " if static
+                                      else f"The linked text channel {text_channel.mention} is"
                                       f"{'moved to archive' if text_channel.history() and archive_category else 'deleted'}",
                                 color=utl.green
                             )
                         )
 
-                    # remove deleted channel from database
-                    channels_db.del_channel(before_channel_id)
+                    if created_channel.internal_type == 'static_channel':
+                        # remove reference to now archived channel
+                        created_channel.text_channel_id = None
+                        session.add(created_channel)
+                        session.commit()
+
+                    else:
+                        # remove deleted channel from database
+                        channels_db.del_channel(before_channel_id)
 
 
 def setup(bot):

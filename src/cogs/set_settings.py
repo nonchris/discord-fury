@@ -33,6 +33,11 @@ settings = {
     "priv": "private_channel",
     "private": "private_channel",
 
+    "stat-channel": "static_channel",
+    "static-channel": "static_channel",
+    "stat": "static_channel",
+    "static": "static_channel",
+
     "allow-edit": "allow_public_rename",
     "ae": "allow_public_rename",
     "edit": "allow_public_rename"
@@ -80,6 +85,7 @@ class Settings(commands.Cog):
             if entries:
                 tracked_channels.extend(entries)
 
+        stc = "__Static Channels:__\n"  # TODO: Implement static channels in settings - extra db access + loop needed
         pub = "__Public Channels:__\n"
         priv = "__Private Channels:___\n"
         log = "__Log Channel:__\n"
@@ -88,7 +94,8 @@ class Settings(commands.Cog):
         if not tracked_channels:
             emb = utils.make_embed(color=utils.yellow, name="No configuration yet",
                                    value="You didn't configure anything yet.\n"
-                                         "Use the help command or try the quick-setup to get started :)")
+                                         f"Use the help command "
+                                         f"or try the quick-setup command `{PREFIX}setup @role` to get started :)")
             await ctx.send(embed=emb)
             return
 
@@ -118,6 +125,7 @@ class Settings(commands.Cog):
 
         emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
                                 value=f"‌\n"
+                                      f"{stc}\n"
                                       f"{pub}\n"
                                       f"{priv}\n"
                                       f"{archive}\n"
@@ -159,6 +167,7 @@ class Settings(commands.Cog):
         # get channel setting or setting string
         setting_setting = settings.get(value, None)  # name of setting
         value_setting = utils.extract_id_from_message(value)  # id / value of setting
+
         if not (setting_setting or value_setting):
             emby = utils.make_embed(color=utils.orange,
                                     name="No valid setting",
@@ -172,7 +181,11 @@ class Settings(commands.Cog):
             settings_db.del_setting_by_setting(ctx.guild.id, setting_setting)
 
         elif value_setting:
-            settings_db.del_setting_by_value(ctx.guild.id, str(value_setting))
+            # We don't know if the setting we aim for is located in channels-db (like static channel)
+            # or in settings db like everything else, but that's okay, we just delete the setting in bot DBs
+            channels_db.del_channel(value_setting)                              # here if it's a static channel
+            settings_db.del_setting_by_value(ctx.guild.id, str(value_setting))  # here if it's something else
+            # TODO: If a static channel is in use when deleted from db the text-channel will stay, how to fix this?
 
         # channel only applied to setting by value
         channel = ctx.guild.get_channel(value_setting)
@@ -219,7 +232,9 @@ class Settings(commands.Cog):
         elif type(set_channel) == discord.CategoryChannel and channel_type == "archive_category":
             return str(set_channel.id), set_channel.name
 
-        elif type(set_channel) == discord.VoiceChannel and channel_type in ['public_channel', 'private_channel']:
+        elif type(set_channel) == discord.VoiceChannel and channel_type in ['public_channel',
+                                                                            'private_channel',
+                                                                            'static_channel']:
 
             # check if max for tracked channels is reached
             if not settings_db.is_track_limit_reached(ctx.guild.id, channel_type):
@@ -375,32 +390,32 @@ class Settings(commands.Cog):
         help=f"__**Configure Voice Channel behaviour**__:\n"
              f"Register a voice channel that members can join to get an own channel\n\n"
              "__Usage:__\n"
-             f"`{PREFIX}set` [_public_ | _private_] [_channel-id_]\n\n"
-             "_public_ or _private_ is the option for the channel-type that's created when joining the channel.\n\n"
-             f""
+             f"`{PREFIX}set` [_public_ | _private_ | _static_] [_channel-id_]\n\n"
+             "_public_, _private_ is the option for the channel-type that's created when joining the channel.\n"
+             "_static_ symbolizes that only a linked text-channel shall be created on join.\n\n"
              f"__**Other  settings:**__\n\n"
              f"__log:__\n"
-             f"Channel for log messages\n"
+             f"Channel for log\n"
              f"__archive:__\n"
-             f"Category linked text channels shall be moved to after linked voice-channel was deleted.\n\n"
+             f"Category text channels shall be moved to after voice-channel was deleted.\n\n"
              f"__prefix:__\n"
              f"Prefix the bot listens to on your server.\n\n"
-             "Usage\n:"
+             "Usage:\n"
              f"`{PREFIX}set` [_archive_ | _log_] [_channel-id_]\n\n"
              f"`{PREFIX}set` [_prefix_] [_new-prefix_]\n\n"
-             "Note that text-channels will only be archived when they contain at least one message, "
+             "Note that text-channels will only be archived when they contain messages, "
              "they'll be deleted otherwise.\n\n"
              f"__**Allow creator to edit the name of a public channel**__"
              f'`{PREFIX}`set [allow-edit | ae] [_yes_ | _no_]\n'
              f'This will only apply to public channels! - Private ones can always be edited.\n'
              f'Default is _no_\n\n'
-             "Your setting will be updated if you already set it earlier.\n\n"
-             f"Aliases: `add`, `svc`, `sa`, `sl`\n\n"
-             "This option is admin only")
+             "Your setting will be updated if you set it before.\n\n"
+             f"Aliases: `add`, `svc`, `sa`, `sl`\n\n")
     @commands.has_permissions(administrator=True)
     async def set_setting(self, ctx: commands.Context, *params):
         # first param setting name, second param setting value
         syntax = "Example: `set [setting name] [setting value]`"
+
         try:
             setting = params[0]
 
@@ -457,6 +472,42 @@ class Settings(commands.Cog):
             await self.update_value_or_create_entry(ctx, setting_type, set_value, set_name)
             return  # we're done - the other handling isn't needed
 
+        # handle the addition of static channels
+        # those are voice channels that are persistent but receive a new text channel every time a member joins
+        if setting_type in ['static_channel']:
+            # trying to get a corresponding channel (id: str, name/ mention: str)
+            set_value, set_name = await self.channel_from_input(ctx, setting_type, value)
+
+            # given channel id seems flawed - returning
+            if not set_value:
+                return
+
+            channel: discord.VoiceChannel = await self.validate_channel(ctx, set_value)
+
+            if channel is None:
+                return
+
+            session = db_models.open_session()
+            entry: Union[db_models.CreatedChannels, None] = channels_db.get_voice_channel_by_id(set_value, session)
+
+            if entry:
+                entry.internal_type = setting_type
+                session.add(entry)
+                session.commit()
+                await self.send_setting_updated(ctx, setting_type, set_name)
+                return
+
+            # delete old setting if channels was e.g. public-channel before
+            settings_db.del_setting_by_value(ctx.guild.id, set_value)
+            channels_db.add_channel(voice_channel_id=int(set_value),
+                                    text_channel_id=None,
+                                    guild_id=ctx.guild.id,
+                                    internal_type=setting_type,
+                                    category=channel.category_id,
+                                    set_by=ctx.author.id)
+
+            await self.send_setting_added(ctx, setting_type, set_name)
+
         # now handle tracked channels
         # tracked channels require an other database handling as the other settings
         # we need to check if there is a setting with that value and adjust the setting_name
@@ -486,6 +537,10 @@ class Settings(commands.Cog):
 
             # create new entry, channel not tracked yet
             else:
+
+                # delete old entry in channels db if it exists - maybe channel was static channel before
+                channels_db.del_channel(int(set_value))
+
                 # write entry to db
                 settings_db.add_setting(
                     guild_id=ctx.guild.id,
