@@ -85,6 +85,7 @@ class Settings(commands.Cog):
             if entries:
                 tracked_channels.extend(entries)
 
+        stc = "__Static Channels:__\n"  # TODO: Implement static channels in settings - extra db access + loop needed
         pub = "__Public Channels:__\n"
         priv = "__Private Channels:___\n"
         log = "__Log Channel:__\n"
@@ -93,7 +94,8 @@ class Settings(commands.Cog):
         if not tracked_channels:
             emb = utils.make_embed(color=utils.yellow, name="No configuration yet",
                                    value="You didn't configure anything yet.\n"
-                                         "Use the help command or try the quick-setup to get started :)")
+                                         f"Use the help command "
+                                         f"or try the quick-setup command `{PREFIX}setup @role` to get started :)")
             await ctx.send(embed=emb)
             return
 
@@ -123,6 +125,7 @@ class Settings(commands.Cog):
 
         emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
                                 value=f"‌\n"
+                                      f"{stc}\n"
                                       f"{pub}\n"
                                       f"{priv}\n"
                                       f"{archive}\n"
