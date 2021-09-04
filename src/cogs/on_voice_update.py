@@ -254,11 +254,11 @@ class VCCreator(commands.Cog):
             created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id)
 
             # check if joined (after) channel is a channel that triggers a channel creation
-            create_channel = settings_db.get_setting_by_value(guild.id, after_channel.id)
+            tracked_channel = settings_db.get_setting_by_value(guild.id, after_channel.id)
 
-            if create_channel:
+            if tracked_channel:
                 voice_channel, text_channel = await create_new_channels(member, after,
-                                                                        create_channel.setting, bot_member_on_guild)
+                                                                        tracked_channel.setting, bot_member_on_guild)
 
                 # write to log channel if configured
                 if log_entry:
