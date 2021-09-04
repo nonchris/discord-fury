@@ -164,6 +164,7 @@ class Settings(commands.Cog):
         # get channel setting or setting string
         setting_setting = settings.get(value, None)  # name of setting
         value_setting = utils.extract_id_from_message(value)  # id / value of setting
+
         if not (setting_setting or value_setting):
             emby = utils.make_embed(color=utils.orange,
                                     name="No valid setting",
@@ -177,7 +178,11 @@ class Settings(commands.Cog):
             settings_db.del_setting_by_setting(ctx.guild.id, setting_setting)
 
         elif value_setting:
-            settings_db.del_setting_by_value(ctx.guild.id, str(value_setting))
+            # We don't know if the setting we aim for is located in channels-db (like static channel)
+            # or in settings db like everything else, but that's okay, we just delete the setting in bot DBs
+            channels_db.del_channel(value_setting)                              # here if it's a static channel
+            settings_db.del_setting_by_value(ctx.guild.id, str(value_setting))  # here if it's something else
+            # TODO: If a static channel is in use when deleted from db the text-channel will stay, how to fix this?
 
         # channel only applied to setting by value
         channel = ctx.guild.get_channel(value_setting)
