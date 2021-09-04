@@ -41,7 +41,6 @@ async def make_channel(voice_state: discord.VoiceState, member: discord.Member, 
     else:
         voice_overwrites[bot_member] = discord.PermissionOverwrite(view_channel=True, connect=True)
 
-    print(voice_overwrites)
     # create channels
     v_channel: discord.VoiceChannel = await member.guild.create_voice_channel(
         vc_name, category=voice_state.channel.category, overwrites=voice_overwrites)
@@ -215,6 +214,22 @@ async def update_channel_overwrites(after_channel: discord.VoiceChannel,
         await linked_channel.edit(overwrites=overwrites)
 
 
+async def send_welcome_message(text_channel: discord.TextChannel, linked_vc: discord.VoiceChannel):
+    await text_channel.send(
+        embed=utl.make_embed(
+            name='Welcome to your own private channel!',
+            value=f'Hey, this channel is only visible for people that are in your voice chat:\n'
+                  f'{linked_vc.mention}\n'
+                  "You can use this channel to share conversation related stuff, "
+                  "use bot commands or just for other things.\n"
+                  'Have fun!',
+            footer='Please note that this channel will be removed '
+                   'when everyone has left the affiliated voice channel.',
+            color=utl.green
+        )
+    )
+
+
 class VCCreator(commands.Cog):
     # Codename: PANTHEON
     """
@@ -275,6 +290,8 @@ class VCCreator(commands.Cog):
                 # moving creator to created channel
                 try:
                     await member.move_to(voice_channel, reason=f'{member} issued creation')
+                    await send_welcome_message(text_channel, voice_channel)  # send message explaining text channel
+                    
                 # if user already left already
                 except discord.HTTPException as e:
                     print("Handle HTTP exception during creation of channels - channel was already empty")
@@ -296,6 +313,8 @@ class VCCreator(commands.Cog):
                         created_channel.text_channel_id = text_channel.id
                         session.add(created_channel)
                         session.commit()
+
+                        await send_welcome_message(text_channel, after_channel)  # send message explaining text channel
 
                     except discord.HTTPException as e:
                         # TODO: log this
