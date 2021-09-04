@@ -309,7 +309,8 @@ class VCCreator(commands.Cog):
 
         if before_channel:
             # check db if before channel is a channel that was created by the bot
-            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(before_channel.id)
+            session = db.open_session()
+            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(before_channel.id, session)
 
             if created_channel:
                 # member left but there are still members in vc
@@ -324,10 +325,13 @@ class VCCreator(commands.Cog):
                     text_channel: Union[discord.TextChannel, None] = guild.get_channel(created_channel.text_channel_id)
 
                     # delete channels - catch AttributeErrors to still do the db access and the logging
-                    try:
-                        await before_channel.delete(reason="Channel is empty")
-                    except AttributeError:
-                        pass
+
+                    # delete VC only if it's not a static_channel
+                    if created_channel.internal_type != 'static_channel':
+                        try:
+                            await before_channel.delete(reason="Channel is empty")
+                        except AttributeError:
+                            pass
 
                     # archive or delete linked text channel
                     try:
@@ -347,17 +351,27 @@ class VCCreator(commands.Cog):
                                 color=utl.red))
 
                     if log_channel:
+                        static = True if created_channel.internal_type == 'static_channel' else False  # helper variable
+
                         await log_channel.send(
                             embed=utl.make_embed(
-                                name=f"Deleted {before_channel.name}",
-                                value=f"The linked text channel {text_channel.mention} was"
+                                name=f"Removed {text_channel.name}" if static else f"Deleted {before_channel.name}",
+                                value=f"{text_channel.mention} was linked to {before_channel.name} and is " if static
+                                      else f"The linked text channel {text_channel.mention} is"
                                       f"{'moved to archive' if text_channel.history() and archive_category else 'deleted'}",
                                 color=utl.green
                             )
                         )
 
-                    # remove deleted channel from database
-                    channels_db.del_channel(before_channel_id)
+                    if created_channel.internal_type == 'static_channel':
+                        # remove reference to now archived channel
+                        created_channel.text_channel_id = None
+                        session.add(created_channel)
+                        session.commit()
+
+                    else:
+                        # remove deleted channel from database
+                        channels_db.del_channel(before_channel_id)
 
 
 def setup(bot):
