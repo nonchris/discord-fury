@@ -250,12 +250,12 @@ class VCCreator(commands.Cog):
         # check if member has a voice channel after the state update
         # could trigger the creation of a new channel or require an update for an existing one
         if after_channel:
-
+            session = db.open_session()
             # check db if channel is a channel that was created by the bot
-            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id)
+            created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id, session)
 
             # check if joined (after) channel is a channel that triggers a channel creation
-            tracked_channel = settings_db.get_setting_by_value(guild.id, after_channel.id)
+            tracked_channel = settings_db.get_setting_by_value(guild.id, after_channel.id, session)
 
             if tracked_channel:
                 voice_channel, text_channel = await create_new_channels(member, after,
@@ -281,11 +281,31 @@ class VCCreator(commands.Cog):
                     await clean_after_exception(voice_channel, text_channel,
                                                 archive=archive_category, log_channel=log_channel)
 
-            # channel is a bot created channel - add user to linked text_channel
-            # TODO we can skip this API call when the creator just got moved
+            # channel is in our database - add user to linked text_channel
             elif created_channel:
-                # update overwrites to add user to joined channel
-                await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
+
+                # static channels need a new linked text-channel if they were empty before
+                if created_channel.internal_type == 'static_channel' and created_channel.text_channel_id is None:
+
+                    try:
+                        tc_overwrite = generate_text_channel_overwrite(after_channel, self.bot.user)
+                        text_channel = await guild.create_text_channel(after_channel.name,
+                                                                       overwrites=tc_overwrite,
+                                                                       category=after_channel.category,
+                                                                       reason="User joined linked voice channel")
+                        created_channel.text_channel_id = text_channel.id
+                        session.add(created_channel)
+                        session.commit()
+
+                    except discord.HTTPException as e:
+                        # TODO: log this
+                        pass
+
+                # processing 'normal', existing linked channel
+                else:
+                    # update overwrites to add user to joined channel
+                    # TODO we can skip this API call when the creator just got moved
+                    await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
 
         if before_channel:
             # check db if before channel is a channel that was created by the bot
