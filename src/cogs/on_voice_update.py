@@ -169,6 +169,7 @@ def generate_text_channel_overwrite(
     Gives read/ write permission to:\n
     - roles that are registered as allowed in the settings
     - members that are currently in the voice channel
+    - the bot member creating that channel
 
     Prohibits guilds default role from accessing the channel
 
