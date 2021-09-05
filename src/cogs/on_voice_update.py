@@ -66,7 +66,11 @@ channel_names = {"public_channel": [["╠{0}'s discussion", "{0}'s discussion"],
                             ["╠{0}'s room", "{0}'s room"],
                             ["╠{0}'s open talk", "{0}'s open talk"],
                             ["╠{0}'s bar", "{0}'s bar"],
-                            ["╠{0}'s' public office", "{0}'s public office"]
+                            ["╠{0}'s public office", "{0}'s public office"],
+                            ["╠{0}'s pool", "{0}'s pool"],
+                            ["╠{0}'s bench", "{0}'s bench"],
+                            ["╠{0}'s couch", "{0}'s couch"],
+                            ["╠{0}'s channel", "{0}'s channel"],
                             ],
 
                  "private_channel": [["╠{0}'s private discussion", "{0}'s private discussion"],
@@ -74,7 +78,8 @@ channel_names = {"public_channel": [["╠{0}'s discussion", "{0}'s discussion"],
                              ["╠{0}'s private room", "{0}'s private room"],
                              ["╠{0}'s elite room", "{0}'s elite room"],
                              ["╠{0}'s regular table", "{0}'s regular table"],
-                             ["╠{0}'s private haven", "{0}'s private haven"]
+                             ["╠{0}'s private haven", "{0}'s private haven"],
+                             ["╠{0}'s private garden", "{0}'s private garden"],
                              ]
                  }
 
