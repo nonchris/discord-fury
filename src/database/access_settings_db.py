@@ -120,6 +120,7 @@ def add_setting(guild_id: int, setting: str, value: Union[str, int],
                         is_active=active, set_by=set_by, set_date=set_date)
     session.add(entry)
     session.commit()
+    session.close()
 
 
 def del_setting(guild_id: int, setting: str, value: Union[str, int]):
@@ -144,6 +145,7 @@ def del_setting(guild_id: int, setting: str, value: Union[str, int]):
     )
     session.execute(statement)
     session.commit()
+    session.close()
 
 
 def del_setting_by_setting(guild_id: int, setting: str):
@@ -163,6 +165,7 @@ def del_setting_by_setting(guild_id: int, setting: str):
     )
     session.execute(statement)
     session.commit()
+    session.close()
 
 
 def del_setting_by_value(guild_id: int, value: Union[str, int]):
@@ -185,6 +188,7 @@ def del_setting_by_value(guild_id: int, value: Union[str, int]):
     )
     session.execute(statement)
     session.commit()
+    session.close()
 
 
 def is_track_limit_reached(guild_id: int, *channel_types: str) -> bool:

@@ -68,6 +68,7 @@ def add_channel(voice_channel_id: int, text_channel_id: str, guild_id: int, inte
 
     session.add(entry)
     session.commit()
+    session.close()
 
 
 def del_channel(voice_channel_id: int):
@@ -78,3 +79,4 @@ def del_channel(voice_channel_id: int):
     )
     session.execute(statement)
     session.commit()
+    session.close()
