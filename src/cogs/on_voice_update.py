@@ -247,6 +247,10 @@ class VCCreator(commands.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
                                     after: discord.VoiceState):
 
+        # this is the case that a state update happens that is not a channel switch, but a mute or something like that
+        if before.channel and after.channel and before.channel.id == after.channel.id:
+            return
+
         # as shorthand - we'll need this a few times
         guild: discord.Guild = member.guild
         bot_member_on_guild: discord.Member = guild.get_member(self.bot.user.id)
