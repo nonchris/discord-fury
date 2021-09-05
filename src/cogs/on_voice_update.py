@@ -253,9 +253,12 @@ class VCCreator(commands.Cog):
         after_channel: Union[discord.VoiceChannel, None] = after.channel
         before_channel: Union[discord.VoiceChannel, None] = before.channel
 
+        # open db session
+        session = db.open_session()
+
         # get settings for archive and log channel
-        log_entry = settings_db.get_first_setting_for(guild.id, "log_channel")  # get entry if exists
-        archive_entry = settings_db.get_first_setting_for(guild.id, "archive_category")
+        log_entry = settings_db.get_first_setting_for(guild.id, "log_channel", session)  # get entry if exists
+        archive_entry = settings_db.get_first_setting_for(guild.id, "archive_category", session)
 
         # get channels from entries if existing
         log_channel: Union[discord.TextChannel, None] = guild.get_channel(int(log_entry.value)) if log_entry else None
@@ -265,7 +268,7 @@ class VCCreator(commands.Cog):
         # check if member has a voice channel after the state update
         # could trigger the creation of a new channel or require an update for an existing one
         if after_channel:
-            session = db.open_session()
+
             # check db if channel is a channel that was created by the bot
             created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(after_channel.id, session)
 
@@ -312,7 +315,7 @@ class VCCreator(commands.Cog):
                                                                        reason="User joined linked voice channel")
                         created_channel.text_channel_id = text_channel.id
                         session.add(created_channel)
-                        session.commit()
+                        session.flush()
 
                         await send_welcome_message(text_channel, after_channel)  # send message explaining text channel
 
@@ -327,8 +330,8 @@ class VCCreator(commands.Cog):
                     await update_channel_overwrites(after_channel, created_channel, bot_member_on_guild)
 
         if before_channel:
+
             # check db if before channel is a channel that was created by the bot
-            session = db.open_session()
             created_channel: Union[db.CreatedChannels, None] = channels_db.get_voice_channel_by_id(before_channel.id, session)
 
             if created_channel:
@@ -386,11 +389,14 @@ class VCCreator(commands.Cog):
                         # remove reference to now archived channel
                         created_channel.text_channel_id = None
                         session.add(created_channel)
-                        session.commit()
+                        session.flush()
 
                     else:
                         # remove deleted channel from database
                         channels_db.del_channel(before_channel_id)
+
+        session.commit()
+        session.close()
 
 
 def setup(bot):
