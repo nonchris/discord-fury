@@ -37,7 +37,7 @@ POSTGRES_SERVER = os.environ["POSTGRES_SERVER"]
 POSTGRES_DB = os.environ["POSTGRES_DB"]
 
 DB_URL = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DB}"
-engine = create_engine(f'postgresql+psycopg2://{DB_URL}', echo=False)
+engine = create_engine(f'postgresql+psycopg2://{DB_URL}', echo=False, pool_size=10, max_overflow=20)
 
 
 Base: declarative_base = declarative_base()
