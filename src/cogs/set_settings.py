@@ -122,6 +122,7 @@ class Settings(commands.Cog):
                 prefix += f"`{elm.value}` example `{elm.value}help`\n"
 
         session.commit()  # delete all flawed entries
+        session.close()
 
         emby = utils.make_embed(color=utils.blue_light, name="Server Settings",
                                 value=f"‌\n"
@@ -380,6 +381,8 @@ class Settings(commands.Cog):
             set_by=f"{ctx.author.id}"
         )
 
+        session.close()
+
         # send reply
         await Settings.send_setting_added(ctx, setting_name, value_name)
 
@@ -494,6 +497,7 @@ class Settings(commands.Cog):
                 entry.internal_type = setting_type
                 session.add(entry)
                 session.commit()
+
                 await self.send_setting_updated(ctx, setting_type, set_name)
                 return
 
@@ -506,6 +510,7 @@ class Settings(commands.Cog):
                                     category=channel.category_id,
                                     set_by=ctx.author.id)
 
+            session.close()
             await self.send_setting_added(ctx, setting_type, set_name)
 
         # now handle tracked channels
@@ -533,7 +538,6 @@ class Settings(commands.Cog):
 
                 # send reply
                 await self.send_setting_updated(ctx, setting_type, set_name)
-                return
 
             # create new entry, channel not tracked yet
             else:
@@ -551,7 +555,8 @@ class Settings(commands.Cog):
 
                 # send reply
                 await self.send_setting_updated(ctx, setting_type, set_name)
-                return
+
+            session.close()
 
 
 def setup(bot):
