@@ -141,6 +141,23 @@ async def delete_text_channel(t_channel: discord.TextChannel, bot: commands.Bot,
 
     Returns edited channel or None if channel was deleted
     """
+
+    async def is_message_in_channel():
+        """ Check if there is more than the bots tutorial message in the channel """
+
+        # get enough messages to check
+        messages: List[discord.Message] = await t_channel.history(limit=2).flatten()
+
+        # channel is empty
+        if len(messages) == 0:
+            return False
+
+        # only this bot has sent a message - probably the tutorial text -> assume empty
+        elif len(messages) == 1 and messages[0].author.id == bot.user.id:
+            return False
+
+        return True
+
     # if archive is given and channel is not empty: move to archive
     if archive and await is_message_in_channel():
 
