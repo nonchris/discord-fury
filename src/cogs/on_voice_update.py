@@ -412,8 +412,8 @@ class VCCreator(commands.Cog):
                             embed=utl.make_embed(
                                 name=f"Removed {text_channel.name}" if static else f"Deleted {before_channel.name}",
                                 value=f"{text_channel.mention} was linked to {before_channel.name} and is " if static
-                                      else f"The linked text channel {text_channel.mention} is"
-                                      f"{'moved to archive' if text_channel.history() and archive_category else 'deleted'}",
+                                      else f"The linked text channel {text_channel.mention} is "
+                                      f"{'moved to archive' if archived_channel is not None and archive_category else 'deleted'}",
                                 color=utl.green
                             )
                         )
