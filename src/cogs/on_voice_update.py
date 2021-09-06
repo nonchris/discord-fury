@@ -134,7 +134,8 @@ async def create_new_channels(member: discord.Member,
     return voice_channel, text_channel
 
 
-async def delete_text_channel(t_channel: discord.TextChannel, archive=None):
+async def delete_text_channel(t_channel: discord.TextChannel, bot: commands.Bot,
+                              archive=None) -> Union[discord.TextChannel, None]:
     """
     Checks whether channel shall be archived or deleted and executes that action
     """
@@ -150,10 +151,11 @@ async def delete_text_channel(t_channel: discord.TextChannel, archive=None):
 
 
 async def clean_after_exception(voice_channel: discord.VoiceChannel, text_channel: discord.TextChannel,
+                                bot: commands.Bot,
                                 archive=None, log_channel=None):
     """ Cleanup routine that handles the deletion / activation of a voice- and text-channel"""
     await voice_channel.delete(reason="An error occurred - user most likely left the channel during the process")
-    await delete_text_channel(text_channel, archive=archive)
+    await delete_text_channel(text_channel, bot, archive=archive)
     if log_channel:
         log_channel.send(
             embed=utl.make_embed(
@@ -307,7 +309,7 @@ class VCCreator(commands.Cog):
                 # if user already left already
                 except discord.HTTPException as e:
                     print("Handle HTTP exception during creation of channels - channel was already empty")
-                    await clean_after_exception(voice_channel, text_channel,
+                    await clean_after_exception(voice_channel, text_channel, self.bot,
                                                 archive=archive_category, log_channel=log_channel)
 
             # channel is in our database - add user to linked text_channel
@@ -366,7 +368,7 @@ class VCCreator(commands.Cog):
 
                     # archive or delete linked text channel
                     try:
-                        await delete_text_channel(text_channel, archive=archive_category)
+                        archived_channel = await delete_text_channel(text_channel, self.bot, archive=archive_category)
 
                     except AttributeError:
                         pass
