@@ -138,16 +138,20 @@ async def delete_text_channel(t_channel: discord.TextChannel, bot: commands.Bot,
                               archive=None) -> Union[discord.TextChannel, None]:
     """
     Checks whether channel shall be archived or deleted and executes that action
+
+    Returns edited channel or None if channel was deleted
     """
     # if archive is given and channel is not empty: move to archive
-    if archive and t_channel.last_message is not None:
+    if archive and await is_message_in_channel():
+
         await t_channel.edit(category=archive,
                              reason="Connected voice channel is empty, archive channel with messages",
                              overwrites=archive.overwrites)
-        return
+        return t_channel
 
     # delete channel
     await t_channel.delete(reason="Channel is empty and not needed anymore")
+    return None
 
 
 async def clean_after_exception(voice_channel: discord.VoiceChannel, text_channel: discord.TextChannel,
@@ -371,10 +375,11 @@ class VCCreator(commands.Cog):
                         archived_channel = await delete_text_channel(text_channel, self.bot, archive=archive_category)
 
                     except AttributeError:
-                        pass
+                        archived_channel = None
 
                     except discord.errors.HTTPException:
                         # occurs when category that the channel shall be moved to is full
+                        archived_channel = None
                         await log_channel.send(
                             embed=utl.make_embed(
                                 name="ERROR handling linked text channel",
