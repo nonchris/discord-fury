@@ -61,25 +61,29 @@ def is_create_channel(guild: discord.Guild, channel: discord.VoiceChannel) -> bo
     return True if settings_db.get_setting(guild.id, "create_channel", str(channel.id)) else False
 
 
-channel_names = {"public_channel": [["╠{0}'s discussion", "{0}'s discussion"],
-                            ["╠{0}'s voice channel", "{0}'s text channel"],
-                            ["╠{0}'s room", "{0}'s room"],
-                            ["╠{0}'s open talk", "{0}'s open talk"],
-                            ["╠{0}'s bar", "{0}'s bar"],
-                            ["╠{0}'s public office", "{0}'s public office"],
-                            ["╠{0}'s pool", "{0}'s pool"],
-                            ["╠{0}'s bench", "{0}'s bench"],
-                            ["╠{0}'s couch", "{0}'s couch"],
-                            ["╠{0}'s channel", "{0}'s channel"],
+tc_sign_prefix = "🔊-"  # shall be placed in {0} of text channel names, to highlight that channel is 'special'
+channel_names = {"public_channel": [
+                            # voice channel name, text channel name
+                            ["╠{0}'s discussion", "{0}-{1}'s discussion"],
+                            ["╠{0}'s voice channel", "{0}-{1}'s text channel"],
+                            ["╠{0}'s room", "{0}-{1}'s room"],
+                            ["╠{0}'s open talk", "{0}-{1}'s open talk"],
+                            ["╠{0}'s bar", "{0}-{1}'s bar"],
+                            ["╠{0}'s public office", "{0}-{1}'s public office"],
+                            ["╠{0}'s pool", "{0}-{1}'s pool"],
+                            ["╠{0}'s bench", "{0}-{1}'s bench"],
+                            ["╠{0}'s couch", "{0}-{1}'s couch"],
+                            ["╠{0}'s channel", "{0}-{1}'s channel"],
                             ],
 
-                 "private_channel": [["╠{0}'s private discussion", "{0}'s private discussion"],
-                             ["╠{0}'s private fellowship", "{0}'s private fellowship"],
-                             ["╠{0}'s private room", "{0}'s private room"],
-                             ["╠{0}'s elite room", "{0}'s elite room"],
-                             ["╠{0}'s regular table", "{0}'s regular table"],
-                             ["╠{0}'s private haven", "{0}'s private haven"],
-                             ["╠{0}'s private garden", "{0}'s private garden"],
+                 "private_channel": [
+                             ["╠{0}'s private discussion", "{0}-{1}'s private discussion"],
+                             ["╠{0}'s private fellowship", "{0}-{1}'s private fellowship"],
+                             ["╠{0}'s private room", "{0}-{1}'s private room"],
+                             ["╠{0}'s elite room", "{0}-{1}'s elite room"],
+                             ["╠{0}'s regular table", "{0}-{1}'s regular table"],
+                             ["╠{0}'s private haven", "{0}-{1}'s private haven"],
+                             ["╠{0}'s private garden", "{0}-{1}'s private garden"],
                              ]
                  }
 
@@ -128,7 +132,8 @@ async def create_new_channels(member: discord.Member,
     # issue creation of channels
     voice_channel, text_channel = await make_channel(after, member, bot_member, voice_channel_permissions,
                                                      vc_name=new_channel_name[0].format(member.display_name),
-                                                     tc_name=new_channel_name[1].format(member.display_name),
+                                                     tc_name=new_channel_name[1].format(tc_sign_prefix,
+                                                                                        member.display_name),
                                                      channel_type=channel_type)
 
     return voice_channel, text_channel
@@ -341,7 +346,7 @@ class VCCreator(commands.Cog):
 
                     try:
                         tc_overwrite = generate_text_channel_overwrite(after_channel, self.bot.user)
-                        text_channel = await guild.create_text_channel(after_channel.name,
+                        text_channel = await guild.create_text_channel(f"{tc_sign_prefix}{after_channel.name}",
                                                                        overwrites=tc_overwrite,
                                                                        category=after_channel.category,
                                                                        reason="User joined linked voice channel")
