@@ -62,28 +62,30 @@ def is_create_channel(guild: discord.Guild, channel: discord.VoiceChannel) -> bo
 
 
 tc_sign_prefix = "🔊-"  # shall be placed in {0} of text channel names, to highlight that channel is 'special'
+sign_public = "╠"       # shall be placed in {1} of public channel names, to highlight that channel is 'public'
+sign_private = "🔒"      # shall be placed in {1} of private channel names, to highlight that channel is 'private'
 channel_names = {"public_channel": [
                             # voice channel name, text channel name
-                            ["╠{0}'s discussion", "{0}-{1}'s discussion"],
-                            ["╠{0}'s voice channel", "{0}-{1}'s text channel"],
-                            ["╠{0}'s room", "{0}-{1}'s room"],
-                            ["╠{0}'s open talk", "{0}-{1}'s open talk"],
-                            ["╠{0}'s bar", "{0}-{1}'s bar"],
-                            ["╠{0}'s public office", "{0}-{1}'s public office"],
-                            ["╠{0}'s pool", "{0}-{1}'s pool"],
-                            ["╠{0}'s bench", "{0}-{1}'s bench"],
-                            ["╠{0}'s couch", "{0}-{1}'s couch"],
-                            ["╠{0}'s channel", "{0}-{1}'s channel"],
+                            ["{1}{0}'s discussion", "{0}-{1}'s discussion"],
+                            ["{1}{0}'s voice channel", "{0}-{1}'s text channel"],
+                            ["{1}{0}'s room", "{0}-{1}'s room"],
+                            ["{1}{0}'s open talk", "{0}-{1}'s open talk"],
+                            ["{1}{0}'s bar", "{0}-{1}'s bar"],
+                            ["{1}{0}'s public office", "{0}-{1}'s public office"],
+                            ["{1}{0}'s pool", "{0}-{1}'s pool"],
+                            ["{1}{0}'s bench", "{0}-{1}'s bench"],
+                            ["{1}{0}'s couch", "{0}-{1}'s couch"],
+                            ["{1}{0}'s channel", "{0}-{1}'s channel"],
                             ],
 
                  "private_channel": [
-                             ["╠{0}'s private discussion", "{0}-{1}'s private discussion"],
-                             ["╠{0}'s private fellowship", "{0}-{1}'s private fellowship"],
-                             ["╠{0}'s private room", "{0}-{1}'s private room"],
-                             ["╠{0}'s elite room", "{0}-{1}'s elite room"],
-                             ["╠{0}'s regular table", "{0}-{1}'s regular table"],
-                             ["╠{0}'s private haven", "{0}-{1}'s private haven"],
-                             ["╠{0}'s private garden", "{0}-{1}'s private garden"],
+                             ["{1}{0}'s private discussion", "{0}-{1}'s private discussion"],
+                             ["{1}{0}'s private fellowship", "{0}-{1}'s private fellowship"],
+                             ["{1}{0}'s private room", "{0}-{1}'s private room"],
+                             ["{1}{0}'s elite room", "{0}-{1}'s elite room"],
+                             ["{1}{0}'s regular table", "{0}-{1}'s regular table"],
+                             ["{1}{0}'s private haven", "{0}-{1}'s private haven"],
+                             ["{1}{0}'s private garden", "{0}-{1}'s private garden"],
                              ]
                  }
 
@@ -111,7 +113,8 @@ async def create_new_channels(member: discord.Member,
     voice_channel_permissions = after.channel.category.overwrites
 
     # overwriting permissions if channel shall be private
-    if channel_type == 'private_channel':
+    is_private = channel_type == 'private_channel'
+    if is_private:
 
         # prohibit everybody from joining except creator, give creator channel edit permissions
         voice_channel_permissions = {
@@ -131,7 +134,10 @@ async def create_new_channels(member: discord.Member,
 
     # issue creation of channels
     voice_channel, text_channel = await make_channel(after, member, bot_member, voice_channel_permissions,
-                                                     vc_name=new_channel_name[0].format(member.display_name),
+                                                     vc_name=new_channel_name[0].format(
+                                                         member.display_name,
+                                                         sign_private if is_private else sign_public),
+
                                                      tc_name=new_channel_name[1].format(tc_sign_prefix,
                                                                                         member.display_name),
                                                      channel_type=channel_type)
